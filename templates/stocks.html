@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Stocks summary
+{% endblock %}
+
+{% block main %}
+    <div main>
+        <div tables>
+            <table align = "center">
+                <h2>Portfolio:</h2>
+                <tr>
+                    <th>Stock</th>
+                    <th>Shares</th>
+                    <th>Current price</th>
+                    <th>Value</th>
+                </tr>
+                {% for l in range(i) %}
+                    <tr>
+                        <th>{{ stocks[l]['stock'] }}</th>
+                        <td>{{ shares[l]['shares'] }}</td>
+                        <td>{{ current_price[l] }}</td>
+                        <td>{{ value[l] }}</td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <th>Cash</th>
+                    <td></td>
+                    <td></td>
+                    <td>{{ cash }}</td>
+                </tr>
+                <tr>
+                    <th>Grand total</th>
+                    <td></td>
+                    <td></td>
+                    <td>{{ grand_total }}</td>
+                </tr>
+            </table>
+        </div>
+        <h2 style = "padding-top: 50px">Get a quote</h2>
+        <form id = "quote" action="/quote" method="post">
+            <p>Please enter the symbol of the stock you wish to get a quote of:</p>
+            <div class="form-group">
+                <input id = "quote_symbol" autocomplete="off" autofocus class="form-control" name="symbol" placeholder="Stock Symbol" type="text"/>
+                <div id = "quotesymbol" class = "val_error"></div>
+            </div>
+                <button class="btn btn-primary" type="submit">Get quote</button>
+        </form>
+        <h2 style = "padding-top: 50px">Buying shares</h2>
+        <form id = "buy" action="/buy" method="post">
+        <p>Please enter the symbol of the stock you wish to buy:</p>
+        <div class="form-group">
+            <input id = "buy_symbol" autocomplete="off" autofocus class="form-control" name="symbol" placeholder="Stock Symbol" type="text"/>
+            <div id = "buysymbol" class = "val_error"></div>
+        </div>
+        <p>Please enter the number of shares you wish to buy:</p>
+        <div class="form-group">
+            <input id = "buy_shares" class="form-control" name="shares" placeholder="Number of shares" type="text"/>
+            <div id = "buyshares" class = "val_error"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Buy shares</button>
+        </form>
+        <h2 style = "padding-top: 50px">Selling shares</h2>
+        <form id = "sell" action = "/sell" method = "post">
+        <p>Please select a stock from the drop-down list:</p>
+        <div class = "form-group">
+            <select id = "sell_symbol"  name = "symbol">
+                <option></option>
+                {% for j in range(i) %}
+                    <option value = "{{ stocks[j]["stock"] }}"> {{ stocks[j]["stock"] }} </option>
+                {% endfor %}
+            </select>
+            <div id = "sellsymbol" class = "val_error"></div>
+        </div>
+        <p>Please enter the number of shares you wish to sell:</p>
+        <div class="form-group">
+            <input id = "sell_shares" class="form-control" name="shares" placeholder="Number of shares" type="text"/>
+            <div id = "sellshares" class = "val_error"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Sell shares</button>
+    </form>
+    </div>
+{% endblock %}

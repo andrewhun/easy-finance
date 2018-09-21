@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Changing password
+{% endblock %}
+
+{% block main %}
+    <form id = "change_pw" action="/change-pw" method="post">
+        <div class="form-group">
+            <input class="form-control" id = "old_pw" name="old_password" autofocus placeholder="Old Password" type="password"/>
+        <div id = "oldpw" class = "val_error"></div>
+        </div>
+        <div class="form-group">
+            <input class="form-control" id = "new_pw" name="new_password" placeholder="New Password" type="password"/>
+            <div id = "newpw" class = "val_error"></div>
+        </div>
+        <div class="form-group">
+            <input class="form-control" id = "change_confirmation" name="confirmation" placeholder="Confirm New Password" type="password"/>
+            <div id = "changeconf" class = "val_error"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Change Password</button>
+    </form>
+{% endblock %}

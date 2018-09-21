@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Selling shares
+{% endblock %}
+
+{% block main %}
+    <form action = "/sell" method = "post">
+        <p>Please select a stock from the drop-down list:</p>
+        <div class = "form-group">
+            <select name = "symbol">
+                <option></option>
+                {% for j in range(i) %}
+                    <option value = "{{ stocks[j]["stock"] }}"> {{ stocks[j]["stock"] }} </option>
+                {% endfor %}
+            </select>
+        </div>
+        <p>Please enter the number of shares you wish to sell:</p>
+        <div class="form-group">
+            <input class="form-control" name="shares" placeholder="Number of shares" type="text"/>
+        </div>
+        <button class="btn btn-primary" type="submit">Sell shares</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Main page
+{% endblock %}
+
+{% block main %}
+    <div main>
+        <div tables>
+           <table align = "center">
+                <h2>Financial summary:</h2>
+                <tr>
+                    <th>Expenses</th>
+                    <th>Income</th>
+                    <th>Cash-flow</th>
+                    <th>Grand total</th>
+                </tr>
+                <tr>
+                    <td>{{ expenses[0]['SUM(amount)'] }}</td>
+                    <td>{{ income[0]['SUM(amount)'] }}</td>
+                    <td>{{ grand_total }}</td>
+                    <td>{{ usd(cash) }}</td>
+                </tr>
+                </table>
+        </div>
+        <div tables>
+           <table align = "center">
+                <h2>Recurring entries</h2>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Time</th>
+                    <th>Frequency</th>
+                </tr>
+                {% for i in range(j) %}
+                    <tr>
+                        <td>{{ id_[i]["id"] }}</td>
+                        <td>{{ type_[i]["type"] }}</td>
+                        <td>{{ title[i]["title"] }}</td>
+                        <td>{{ usd(amount[i]["amount"]) }}</td>
+                        <td>{{ time[i]["time"] }}</td>
+                        <td>{{ frequency[i]["frequency"] }}</td>
+                    </tr>
+                {% endfor %}
+              </table>
+        </div>
+        <form id = "auto_values" name ="auto_values" action = "/auto_values" method = "POST">
+            <div class = "form-group">
+                <h2>Add recurring income/expense element</h2>
+                <p>Frequency:
+                    <select name = "frequency" id = "frequency" size = "3">
+                        <option id = "daily" name = "daily" value = "daily">Daily</option>
+                        <option id = "weekly" name = "weekly" value = "weekly">Weekly</option>
+                        <option id = "monthly" name = "monthly" value = "monthly">Monthly</option>
+                    </select>
+                </p>
+                <div id = "freq" class = "val_error"></div>
+                <p>
+                    Type: <select name = "auto_type" id = "auto_type" size = "2">
+                    <option id = "auto_income" name = "auto_income" value = "income">Income</option>
+                    <option id = "auto_expense" name = "auto_expense" value = "expense">Expense</option>
+                </select>
+                <div id = "autotype" class = "val_error"></div>
+                <p> Title:
+                    <input id = "auto_title" name = "auto_title" type = "text" placeholder = "value title">
+                    </input>
+                </p>
+                <div class = "val_error" id = "autotitle"></div>
+                <p>
+                    Amount:
+                    <input id = "auto_amount" name = "auto_amount" type = "number" min = "0" step = "any" placeholder = "amount">
+                    </input>
+                </p>
+                <div id = "autoamount" class = "val_error"></div>
+            </div>
+            <button class="btn btn-primary" type="submit">Add recurring element</button>
+        </form>
+        <p style ="padding-top: 10px">
+            <button style = "margin-right: 10px" class="btn btn-primary" type="button" id = "editauto">Edit recurring element</button>
+            <button class="btn btn-primary" type="button" id = "deleteauto">Delete recurring element</button>
+        </p>
+        <form style = "display: none" id = "edit_auto" name ="edit_auto" action = "/edit_auto" method = "POST">
+            <div class = "form-group" style = "padding-top: 10px">
+                <h2>Edit recurring income/expense entry</h2>
+                <p>Please edit at least one property:</p>
+                <p>Entry ID:
+                <input type = "number" id = "edit_id" name = "edit_id" placeholder = "ID"></input>
+                </p>
+                <div class = "val_error" id = "editid"></div>
+                <p>New type:
+                <select name = "edit_type" id = "edit_type" size = "2">
+                    <option value = "income">Income</option>
+                    <option value = "expense">Expense</option>
+                </select>
+                (optional)
+                </p>
+                <p>New title:
+                <input type = "text" id = "edit_title" name = "edit_title" placeholder = "Title"></input>
+                (optional)
+                </p>
+                <p>New amount:
+                <input type = "number" min = "0" id = "edit_amount" name = "edit_amount" placeholder = "Amount" step = "any"></input>
+                (optional)
+                </p>
+                <div class = "val_error" id = "editamount"></div>
+                <p>New frequency:
+                <select id = "edit_frequency" name = edit_frequency size = "3">
+                    <option value = "daily">Daily</option>
+                    <option value = "weekly">Weekly</option>
+                    <option value = "monthly">Monthly</option>
+                </select>
+                (optional)
+                </p>
+            </div>
+            <button class="btn btn-primary" type="submit">Edit recurring entry</button>
+        </form>
+        <form style = "display: none" id = "delete_auto" name ="delete_auto" action = "/delete_auto" method = "POST">
+            <div class = "form-group" style = "padding-top: 10px">
+                <h2>Delete recurring income/expense entry</h2>
+                <p> Entry ID:
+                <input type = "number" id = "delete_id" name = "delete_id" placeholder = "ID"></input>
+                </p>
+                <div class = "val_error" id = "deleteid"></div>
+            </div>
+            <button class="btn btn-primary" type="submit">Delete recurring entry</button>
+            <p style ="padding-top: 10px">
+                <h2>Alternatively, press this button to delete all recurring entries:</h2>
+                <button class="btn btn-primary" type="button" id = "deleteallauto">Delete all recurring entries</button>
+            </p>
+            <div class = "form-group" style = "display: none" id = "delete_all_auto">
+                <p>
+                    <input type = "checkbox" id = "delete_all_check" name = "check" value = "uncheck">
+                    I wish to delete all recurring input and expense entries</input>
+                </p>
+                <button class="btn btn-primary" type="submit">Delete all recurring entries</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
