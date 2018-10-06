@@ -30,20 +30,60 @@ main .form-control
     /* override Bootstrap's 100% width for form controls */
     width: auto;
 }
+.form-group
+{
+    /* dark background color */
+    /*background-color: #3d3f42;*/
 
+    /* light text color */
+    /*color: #afb5bf;*/
+}
+body 
+{
+    /* light cyan background */
+    /*background-color: rgba(0, 255, 255, 0.25);*/
+}
 main
 {
     /* scroll horizontally as needed */
     overflow-x: auto;
 
     /* center contents */
-    text-align: center;
+    text-align: center;   
+
+    /* light text color */
+    /*color: #afb5bf;*/
 }
 
 main img
 {
     /* constrain images on small screens */
     max-width: 100%;
+}
+main .val_error{
+    color: #FF1F1F;
+}
+main .alert
+{
+    display: none;
+
+    width: auto;
+}
+.lefties
+{
+    padding-right: 200px;
+}
+.lefties .less 
+{
+    padding-right: 100px;
+}
+.table 
+{
+    width: auto;
+}
+.bg-dark 
+{
+    width: auto;
 }
 
 div.tables
@@ -56,9 +96,7 @@ table, tr
 }
 th, td
 {
-    padding: 15 px;
+    padding: 15px;
     border: 1px solid #ddd;
 }
-.val_error{
-    color: #FF1F1F;
-}
+

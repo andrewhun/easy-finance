@@ -1,5 +1,7 @@
 // Execute when the DOM is fully loaded
 $(document).ready(function() {
+    // Hide alert elements by default
+    $(".alert-danger").hide();
     // Execute when the buy form is submitted
     $("#buy").on('submit', function(event) {
         // Create a custom AJAX request
@@ -13,35 +15,8 @@ $(document).ready(function() {
         })
         // when the request is done running check for valid input
         .done(function(data) {
-            // missing stock symbol branch
-            if (data.error == "1"){
-                $("#buyshares").hide();
-                $("#buysymbol").hide();
-                $("#buy_symbol").css({"border": "1px solid red"}).show();
-                $("#buy_shares").css({"border": "1px solid grey"});
-                $("#buysymbol").text("missing stock symbol").show();
-                $("#buy_symbol").focus();
-            }
-            // missing number of shares branch
-            else if (data.error == "2"){
-                $("#buy_shares").css({"border": "1px solid red"});
-                $("#buy_symbol").css({"border": "1px solid grey"});
-                $("#buysymbol").hide();
-                $("#buyshares").hide();
-                $("#buyshares").text("missing number of shares").show();
-                $("#buy_shares").focus();
-            }
-            // invalid number of shares branch
-            else if (data.error == "3"){
-                $("#buy_shares").css({"border": "1px solid red"});
-                $("#buy_symbol").css({"border": "1px solid grey"});
-                $("#buysymbol").hide();
-                $("#buyshares").hide();
-                $("#buyshares").text("invalid number of shares").show();
-                $("#buy_shares").focus();
-            }
             // invalid stock symbol branch (the Yahoo Finance API couldn't find the stock)
-            else if (data.error == "4"){
+            if (data.error == "1"){
                 $("#buysymbol").hide();
                 $("#buyshares").hide();
                 $("#buy_shares").css({"border": "1px solid grey"});
@@ -50,7 +25,7 @@ $(document).ready(function() {
                 $("#buy_symbol").focus();
             }
             // insufficient funds branch
-            else if (data.error == "5"){
+            else if (data.error == "2"){
                 $("#buysymbol").hide();
                 $("#buyshares").hide();
                 $("#buyshares").text("Insufficient funds").show();
@@ -79,35 +54,8 @@ $(document).ready(function() {
         })
         // when the request is done running check for valid input
         .done(function(data) {
-            // no stock selected branch
-            if (data.error == "1") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_shares").css({"border": "1px solid grey"}).show();
-                $("#sell_symbol").css({"border": "1px solid red"}).show();
-                $("#sellsymbol").text("no stock selected").show();
-                $("#sell_symbol").focus();
-            }
-            // missing number of shares branch
-            else if (data.error == "2") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_symbol").css({"border": "1px solid grey"}).show();
-                $("#sell_shares").css({"border": "1px solid red"}).show();
-                $("#sellshares").text("missing number of shares").show();
-                $("#sell_shares").focus();
-            }
-            // invalid number of shares branch (less than 1)
-            else if (data.error == "3") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_symbol").css({"border": "1px solid grey"}).show();
-                $("#sell_shares").css({"border": "1px solid red"}).show();
-                $("#sellshares").text("invalid number of shares").show();
-                $("#sell_shares").focus();
-            }
             // stock is not in the portfolio branch (redundant)
-            else if (data.error == "4") {
+            if (data.error == "1") {
                 $("#sellshares").hide();
                 $("#sellsymbol").hide();
                 $("#sell_shares").css({"border": "1px solid grey"}).show();
@@ -116,7 +64,7 @@ $(document).ready(function() {
                 $("#sell_symbol").focus();
             }
             // no shares owned branch
-            else if (data.error == "5") {
+            else if (data.error == "2") {
                 $("#sellshares").hide();
                 $("#sellsymbol").hide();
                 $("#sell_shares").css({"border": "1px solid grey"}).show();
@@ -125,7 +73,7 @@ $(document).ready(function() {
                 $("#sell_symbol").focus();
             }
             // not enough shares owned branch
-            else if (data.error == "6") {
+            else if (data.error == "3") {
                 $("#sellshares").hide();
                 $("#sellsymbol").hide();
                 $("#sell_symbol").css({"border": "1px solid grey"}).show();
@@ -143,6 +91,28 @@ $(document).ready(function() {
     });
     // Execute when the change password form is submitted
     $("#change_pw").on("submit", function(event) {
+        // Old and new pw are the same branch
+        if ($("#old_pw").val() == $("#new_pw").val()) {
+            $("#oldpw").hide();
+            $("#changeconf").hide();
+            $("#newpw").text("old and new passwords are the same").show();
+            $("#old_pw").css({"border": "1px solid red"});
+            $("#new_pw").css({"border": "1px solid red"});
+            $("#change_confirmation").css({"border": "1px solid grey"});
+            $("#old_pw").focus();
+            return false;
+        }
+        // Password mismatch branch
+        else if ($("#new_pw").val() != $("#change_confirmation").val()) {
+            $("#newpw").hide();
+            $("#oldpw").hide();
+            $("#changeconf").text("new password and its confirmation do not match").show();
+            $("#old_pw").css({"border": "1px solid grey"});
+            $("#new_pw").css({"border": "1px solid red"});
+            $("#change_confirmation").css({"border": "1px solid red"});
+            $("#new_pw").focus();
+            return false;
+            }
         // Create a custom AJAX request
         $.ajax({
             data : {
@@ -155,66 +125,15 @@ $(document).ready(function() {
         })
         // when the request is done running check for valid input
         .done(function(data) {
-            // missing old pw branch
-            if (data.error == "1") {
-                $("#newpw").hide();
-                $("#changeconf").hide();
-                $("#oldpw").text("missing old password").show();
-                $("#old_pw").css({"border": "1px solid red"});
-                $("#new_pw").css({"border": "1px solid grey"});
-                $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#old_pw").focus();
-            }
-            // missing new pw branch
-            else if (data.error == "2") {
-                $("#oldpw").hide();
-                $("#changeconf").hide();
-                $("#newpw").text("missing new password").show();
-                $("#old_pw").css({"border": "1px solid grey"});
-                $("#new_pw").css({"border": "1px solid red"});
-                $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#new_pw").focus()
-            }
-            // missing confirmation branch
-            else if (data.error == "3") {
-                $("#newpw").hide();
-                $("#oldpw").hide();
-                $("#changeconf").text("missing password confirmation").show();
-                $("#old_pw").css({"border": "1px solid grey"});
-                $("#new_pw").css({"border": "1px solid grey"});
-                $("#change_confirmation").css({"border": "1px solid red"});
-                $("#change_confirmation").focus()
-
-            }
-            // old and new pw are the same branch
-            else if (data.error == "4") {
-                $("#oldpw").hide();
-                $("#changeconf").hide();
-                $("#newpw").text("old and new passwords are the same").show();
-                $("#old_pw").css({"border": "1px solid red"});
-                $("#new_pw").css({"border": "1px solid red"});
-                $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#old_pw").focus()
-            }
-            // password mismatch branch
-            else if (data.error == "5") {
-                $("#newpw").hide();
-                $("#oldpw").hide();
-                $("#changeconf").text("new password and its confirmation do not match").show();
-                $("#old_pw").css({"border": "1px solid grey"});
-                $("#new_pw").css({"border": "1px solid red"});
-                $("#change_confirmation").css({"border": "1px solid red"});
-                $("#new_pw").focus()
-            }
             // old pw wrong branch
-            else if (data.error == "6") {
+            if (data.error == "1") {
                 $("#newpw").hide();
                 $("#changeconf").hide();
                 $("#oldpw").text("old password does not match records").show();
                 $("#old_pw").css({"border": "1px solid red"});
                 $("#new_pw").css({"border": "1px solid grey"});
                 $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#old_pw").focus()
+                $("#old_pw").focus();
             }
             // success
             else {
@@ -227,6 +146,17 @@ $(document).ready(function() {
     });
     // Execute when the register form is submitted
     $("#register").on("submit", function(event) {
+        // Password mismatch branch
+        if ($("#reg_pw").val() != $("#reg_confirmation").val()) {
+            $("#regpw").hide();
+            $("#regusername").hide();
+            $("#regconf").text("Password and confirmation do not match").show();
+            $("#reg_confirmation").css({"border": "1px solid red"});
+            $("#reg_pw").css({"border": "1px solid red"});
+            $("#reg_username").css({"border": "1px solid grey"});
+            $("#reg_pw").focus();
+            return false;
+        }
         // Create a custom AJAX request
         $.ajax({
             data : {
@@ -240,48 +170,9 @@ $(document).ready(function() {
         })
         // when the request is done running check for valid input
         .done(function(data) {
-            // missing username branch
-            if (data.error == "1") {
-                $("#regpw").hide();
-                $("#regconf").hide();
-                $("#regusername").text("missing username").show();
-                $("#reg_username").css({"border": "1px solid red"});
-                $("#reg_pw").css({"border": "1px solid grey"});
-                $("#reg_confirmation").css({"border": "1px solid grey"});
-                $("#reg_username").focus();
-            }
-            // missing password branch
-            else if (data.error == "2") {
-                $("#regusername").hide();
-                $("#regconf").hide();
-                $("#regpw").text("missing password").show();
-                $("#reg_pw").css({"border": "1px solid red"});
-                $("#reg_username").css({"border": "1px solid grey"});
-                $("#reg_confirmation").css({"border": "1px solid grey"});
-                $("#reg_pw").focus();
-            }
-            // missing confirmation branch
-            else if (data.error == "3") {
-                $("#regpw").hide();
-                $("#regusername").hide();
-                $("#regconf").text("missing password confirmation").show();
-                $("#reg_confirmation").css({"border": "1px solid red"});
-                $("#reg_pw").css({"border": "1px solid grey"});
-                $("#reg_username").css({"border": "1px solid grey"});
-                $("#reg_confirmation").focus();
-            }
-            // password mismatch branch
-            else if (data.error == "4") {
-                $("#regpw").hide();
-                $("#regusername").hide();
-                $("#regconf").text("Password and confirmation do not match").show();
-                $("#reg_confirmation").css({"border": "1px solid red"});
-                $("#reg_pw").css({"border": "1px solid red"});
-                $("#reg_username").css({"border": "1px solid grey"});
-                $("#reg_pw").focus();
-            }
+
             // username taken branch
-            else if (data.error == "5") {
+            if (data.error == "1") {
                 $("#regpw").hide();
                 $("#regconf").hide();
                 $("#regusername").text("username already taken").show();
@@ -309,12 +200,12 @@ $(document).ready(function() {
             type: "POST",
             url: "/quote"
         })
-        // when the request is done running check for valid input
+        // When the request is done running check for valid input
         .done(function(data) {
-            // missing or invalid input branch
+            // Invalid input branch
             if (data.error) {
                 $("#quote_symbol").css({"border": "1px solid red"});
-                $("#quotesymbol").text("invalid or missing stock symbol").show();
+                $("#quotesymbol").text("invalid stock symbol").show();
                 $("#quote_symbol").focus();
             }
             // success
@@ -342,24 +233,8 @@ $(document).ready(function() {
         })
         // when the request is done running check for valid input
         .done(function(data) {
-            // missing username branch
-            if (data.error == "1") {
-                $("#login_user").css({"border": "1px solid red"});
-                $("#loginpw").hide();
-                $("#login_pw").css({"border": "1px solid grey"});
-                $("#loginuser").text("missing username").show();
-                $("#login_user").focus();
-            }
-            // missing password branch
-            else if (data.error == "2") {
-                $("#login_user").css({"border": "1px solid grey"});
-                $("#loginuser").hide();
-                $("#login_pw").css({"border": "1px solid red"});
-                $("#loginpw").text("missing password").show();
-                $("#login_pw").focus();
-            }
             // invalid input branch
-            else if (data.error == "3") {
+            if (data.error == "1") {
                 $("#login_user").css({"border": "1px solid red"});
                 $("#loginpw").hide();
                 $("#login_pw").css({"border": "1px solid red"});
@@ -374,79 +249,7 @@ $(document).ready(function() {
         // disable the default HTML form submission mechanism
         event.preventDefault();
     });
-    // Execute when the "add recurring income/expense entry" form is submitted
-    $("#auto_values").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                frequency: $("#frequency").val(),
-                auto_type: $("#auto_type").val(),
-                auto_title: $("#auto_title").val(),
-                auto_amount: $("#auto_amount").val()
-            },
-            type: "POST",
-            url: "/auto_values"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing frequency branch
-            if (data.error == "1") {
-                $("#freq").text("Please select the frequency of the element").show();
-                $("#autotype").hide();
-                $("#autotitle").hide();
-                $("#autoamount").hide();
-                $("#frequency").css({"border": "1px solid red"});
-                $("#auto_type").css({"border": "1px solid grey"});
-                $("#auto_title").css({"border": "1px solid grey"});
-                $("#auto_amount").css({"border": "1px solid grey"});
-                $("#frequency").focus();
-            }
-            // missing type branch
-            else if (data.error == "2") {
-                $("#autotype").text("Please select the type of the element").show();
-                $("#freq").hide();
-                $("#autotitle").hide();
-                $("#autoamount").hide();
-                $("#frequency").css({"border": "1px solid grey"});
-                $("#auto_type").css({"border": "1px solid red"});
-                $("#auto_title").css({"border": "1px solid grey"});
-                $("#auto_amount").css({"border": "1px solid grey"});
-                // $("#auto_type").focus();
-            }
-            // missing title branch
-            else if (data.error == "3") {
-                $("#autotitle").text("Please enter the title of the element").show();
-                $("#freq").hide();
-                $("#autotype").hide();
-                $("#autoamount").hide();
-                $("#frequency").css({"border": "1px solid grey"});
-                $("#auto_type").css({"border": "1px solid grey"});
-                $("#auto_title").css({"border": "1px solid red"});
-                $("#auto_amount").css({"border": "1px solid grey"});
-                $("#auto_title").focus();
-            }
-            // missing or invalid amount branch
-            else if (data.error == "4") {
-                $("#autoamount").text("Please enter a valid amount for the element").show();
-                $("#freq").hide();
-                $("#autotitle").hide();
-                $("#autotype").hide();
-                $("#frequency").css({"border": "1px solid grey"});
-                $("#auto_type").css({"border": "1px solid grey"});
-                $("#auto_title").css({"border": "1px solid grey"});
-                $("#auto_amount").css({"border": "1px solid red"});
-                $("#auto_amount").focus();
-            }
-            // success
-            else {
-                // reload the main page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
+
     // if the "edit recurring element" button is clicked, display the
     // edit form and hide the delete form (in case the delete button was pressed before)
     $("#editauto").on("click", function() {
@@ -485,30 +288,23 @@ $(document).ready(function() {
             type: "POST",
             url: "/edit_auto"
         })
-        // when the request is done running check for valid input
+        // When the request is done running check for valid input
         .done(function(data) {
             console.log(data);
-            // missing ID branch
-            if (data.error == "1"){
-                $("#editid").text("Missing entry ID").show();
-                $("#edit_id").css({"border": "1px solid red"});
-                $("#edit_amount").css({"border": "1px solid grey"});
-                $("#editamount").hide();
-            }
             // Invalid ID branch
-            else if (data.error == "2"){
+            if (data.error == "1"){
                 $("#editid").text("Invalid entry ID").show();
                 $("#edit_id").css({"border": "1px solid red"});
                 $("#edit_amount").css({"border": "1px solid grey"});
                 $("#editamount").hide();
             }
-            // success
+            // Success
             else {
-                // reload page to showcase changes
+                // Reload page to showcase changes
                 location.reload();
             }
         });
-        // disable the default HTML form submission mechanism
+        // Disable the default HTML form submission mechanism
         event.preventDefault();
     });
     // Execute when the "edit income/expense entry" form is submitted
@@ -524,30 +320,22 @@ $(document).ready(function() {
             type: "POST",
             url: "/edit_hist"
         })
-        // when the request is done running check for valid input
+        // When the request is done running check for valid input
         .done(function(data) {
-            console.log(data);
-            // missing entry ID branch
+            // Invalid entry ID branch
             if (data.error == "1"){
-                $("#edithistid").text("Missing entry ID").show();
-                $("#edit_hist_id").css({"border": "1px solid red"});
-                $("#edit_hist_amount").css({"border": "1px solid grey"});
-                $("#edithistamount").hide();
-            }
-            // invalid entry ID branch
-            else if (data.error == "2"){
                 $("#edithistid").text("Invalid entry ID").show();
                 $("#edit_hist_id").css({"border": "1px solid red"});
                 $("#edit_hist_amount").css({"border": "1px solid grey"});
                 $("#edithistamount").hide();
             }
-            // success
+            // Success
             else {
-                // reload page to showcase changes
+                // Reload page to showcase changes
                 location.reload();
             }
         });
-        // disable the default HTML form submission mechanism
+        // Disable the default HTML form submission mechanism
         event.preventDefault();
     });
     // Execute when the "delete all recurring entries" checkbox is clicked
@@ -566,22 +354,15 @@ $(document).ready(function() {
         // create custom AJAX request
         $.ajax({
             data : {
-                delete_id: $("#delete_id").val(),
-                check: $("#delete_all_check").val()
+                delete_id: $("#delete_id").val()
             },
             type: "POST",
             url: "/delete_auto"
         })
         // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing entry ID branch
+        .done(function(data) {            
+        // Invalid entry ID branch
             if (data.error == "1"){
-                $("#delete_id").css({"border": "1px solid red"});
-                $("#deleteid").text("Missing entry ID").show();
-            }
-            // Invalid entry ID branch
-            else if (data.error == "2"){
                 $("#delete_id").css({"border": "1px solid red"});
                 $("#deleteid").text("Invalid entry ID").show();
             }
@@ -596,6 +377,7 @@ $(document).ready(function() {
     });
     // Execute when the "delete all entries" checkbox is clicked
     $("#delete_all_check2").on("click", function() {
+        
         // If the checkbox is checked change its value to check
         if ($("#delete_all_check2").is(":checked")){
             $("#delete_all_check2").val("check");
@@ -605,13 +387,13 @@ $(document).ready(function() {
             $("#delete_all_check2").val("uncheck");
         }
     });
+
     // Execute when the "delete income/expense entry" form is submitted
     $("#delete_hist").on("submit", function() {
         // create custom AJAX request
         $.ajax({
             data : {
-                delete_hist_id: $("#delete_hist_id").val(),
-                check: $("#delete_all_check2").val()
+                delete_hist_id: $("#delete_hist_id").val()
             },
             type: "POST",
             url: "/delete_hist"
@@ -619,13 +401,8 @@ $(document).ready(function() {
         // when the request is done running check for valid input
         .done(function(data) {
             console.log(data);
-            // missing entry ID branch
-            if (data.error == "1"){
-                $("#delete_hist_id").css({"border": "1px solid red"});
-                $("#deletehistid").text("Missing entry ID").show();
-            }
             // invalid entry ID branch
-            else if (data.error == "2"){
+            if (data.error == "1"){
                 $("#delete_hist_id").css({"border": "1px solid red"});
                 $("#deletehistid").text("Invalid entry ID").show();
             }
@@ -638,91 +415,11 @@ $(document).ready(function() {
         // disable the default HTML form submission mechanism
         event.preventDefault();
     });
-    // Execute when the "add income/expense entry" form is submitted
-    $("#manual_values").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                manual_type: $("#manual_type").val(),
-                manual_title: $("#manual_title").val(),
-                manual_amount: $("#manual_amount").val()
-            },
-            type: "POST",
-            url: "/manual_values"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing type branch
-            if (data.error == "1") {
-                $("#manualtype").text("Please select the type of the element").show();
-                $("#manualtitle").hide();
-                $("#manualamount").hide();
-                $("#manual_type").css({"border": "1px solid red"});
-                $("#manual_title").css({"border": "1px solid grey"});
-                $("#manual_amount").css({"border": "1px solid grey"});
-                $("#manual_type").focus();
-            }
-            // missing title branch
-            else if (data.error == "2") {
-                $("#manualtitle").text("Please enter the title of the element").show();
-                $("#manualtype").hide();
-                $("#manualamount").hide();
-                $("#manual_type").css({"border": "1px solid grey"});
-                $("#manual_title").css({"border": "1px solid red"});
-                $("#manual_amount").css({"border": "1px solid grey"});
-                $("#manual_title").focus();
-            }
-            // missing or invalid amount branch
-            else if (data.error == "3") {
-                $("#manualamount").text("Please enter a valid amount for the element").show();
-                $("#manualtitle").hide();
-                $("#manualtype").hide();
-                $("#manual_type").css({"border": "1px solid grey"});
-                $("#manual_title").css({"border": "1px solid grey"});
-                $("#manual_amount").css({"border": "1px solid red"});
-                $("#manual_amount").focus();
-            }
-            // success
-            else {
-                // reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // when the "change starting balance" button is clicked show the appropriate form
+
+    // When the "change starting balance" button is clicked show the appropriate form
     $("#editbalance").on("click", function() {
         $("#edit_balance").css({"display": "block"});
         $("#editbalance").css({"display": "none"});
-    });
-    // Execute when the "change starting balance" form is submitted
-    $("#edit_balance").on("submit", function() {
-        // create custom AJAX request
-        $.ajax({
-            data : {
-                edit_balance_amount: $("#edit_balance_amount").val(),
-            },
-            type: "POST",
-            url: "/edit_balance"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // missing or invalid amount branch
-            if (data.error == "1") {
-                $("#editbalanceamount").text("Missing or invalid amount").show();
-                $("#edit_balance_amount").css({"border": "1px solid red"});
-                $("#edit_balance_amount").focus();
-            }
-            // success
-            else {
-                // reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
     });
     // Execute when the "delete all recurring entries" button is clicked
     $("#deleteallauto").on("click", function() {
