@@ -106,7 +106,7 @@ users = Table('users', metadata,
     Column('cash', Float))
 
 # create a session for the database
-# redundant/needless?
+# this is done in order to separate operations that belong to different users
 db = scoped_session(sessionmaker(bind=engine))
 
 
@@ -116,16 +116,16 @@ def index():
     iden = session["user_id"]
     '''Show summary of finances and settings'''
     # variables for the financial summary table
-    expenses = engine.execute(text("SELECT SUM(amount) FROM statement WHERE user_id = :iden AND type = 'expense'"), iden = iden).fetchone()
-    income = engine.execute(text("SELECT SUM(amount) FROM statement WHERE user_id = :iden AND type = 'income'"), iden = iden).fetchone()
-    cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = iden).fetchone()
+    expenses = db.execute(text("SELECT SUM(amount) FROM statement WHERE user_id = :iden AND type = 'expense'"), {'iden': iden}).fetchone()
+    income = db.execute(text("SELECT SUM(amount) FROM statement WHERE user_id = :iden AND type = 'income'"), {'iden': iden}).fetchone()
+    cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': iden}).fetchone()
     # variables for the recurring entries table
-    id_ = engine.execute(text("SELECT id FROM auto_values WHERE user_id = :iden"), iden = iden).fetchall()
-    type_ = engine.execute(text("SELECT type FROM auto_values WHERE user_id = :iden"), iden = iden).fetchall()
-    title = engine.execute(text("SELECT title FROM auto_values WHERE user_id = :iden"), iden = iden).fetchall()
-    amount = engine.execute(text("SELECT amount FROM auto_values WHERE user_id = :iden"), iden = iden).fetchall()
-    time2 = engine.execute(text("SELECT time FROM auto_values WHERE user_id = :iden"), iden = iden).fetchall()
-    frequency = engine.execute(text("SELECT frequency FROM auto_values WHERE user_id = :iden"), iden = iden).fetchall()
+    id_ = db.execute(text("SELECT id FROM auto_values WHERE user_id = :iden"), {'iden': iden}).fetchall()
+    type_ = db.execute(text("SELECT type FROM auto_values WHERE user_id = :iden"), {'iden': iden}).fetchall()
+    title = db.execute(text("SELECT title FROM auto_values WHERE user_id = :iden"), {'iden': iden}).fetchall()
+    amount = db.execute(text("SELECT amount FROM auto_values WHERE user_id = :iden"), {'iden': iden}).fetchall()
+    time2 = db.execute(text("SELECT time FROM auto_values WHERE user_id = :iden"), {'iden': iden}).fetchall()
+    frequency = db.execute(text("SELECT frequency FROM auto_values WHERE user_id = :iden"), {'iden': iden}).fetchall()
     j = len(id_)
     # ensure that grand total does not throw an exception
     if type(income[0]) == type(None) and type(expenses[0]) == type(None):
@@ -137,6 +137,7 @@ def index():
     else:
         grand_total = income[0] - expenses[0]
 
+    db.commit()
     return render_template("index.html", expenses = expenses, income = income, grand_total = usd(grand_total), usd = usd,
      id_ = id_, type_ = type_, title = title, amount = amount, time = time2, frequency = frequency, j = j, cash = cash[0])
 
@@ -151,10 +152,11 @@ def auto_values():
     auto_amount = request.form.get("auto_amount")
 
     # add recurring element to the auto_values table
-    engine.execute(text("INSERT INTO auto_values(type, title, amount, user_id, frequency) "
+    db.execute(text("INSERT INTO auto_values(type, title, amount, user_id, frequency) "
     "VALUES(:my_type, :title, :amount, :iden, :frequency)"),
-    my_type = auto_type, title = auto_title, amount = float(auto_amount),
-    iden = session["user_id"], frequency = frequency)
+    {'my_type': auto_type, 'title': auto_title, 'amount': float(auto_amount),
+        'iden': session["user_id"], 'frequency': frequency})
+    db.commit()
 
     return redirect("/")
 '''
@@ -202,20 +204,21 @@ def manual_values():
     manual_amount = request.form.get("manual_amount")
 
     # grab the user's cash in the users table
-    cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = session["user_id"]).fetchone()
+    cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': session["user_id"]}).fetchone()
     # add the entry's amount to the cash if its type is income
     if manual_type == "income":
-        engine.execute(text("UPDATE users SET cash = :cash + :amount WHERE id = :iden"),
-        amount = float(manual_amount), iden = session["user_id"], cash = cash[0])
+        db.execute(text("UPDATE users SET cash = :cash + :amount WHERE id = :iden"),
+        {'amount': float(manual_amount), 'iden': session["user_id"], 'cash': cash[0]})
     # subtract the entry's amount from the cash if its type is expense
     else:
-        engine.execute(text("UPDATE users SET cash = :cash - :amount WHERE id = :iden"),
-        amount = float(manual_amount), iden = session["user_id"], cash = cash[0])
+        db.execute(text("UPDATE users SET cash = :cash - :amount WHERE id = :iden"),
+        {'amount': float(manual_amount), 'iden': session["user_id"], 'cash': cash[0]})
     # add the element to the statement table
-    engine.execute(text("INSERT INTO statement(type, title, amount, user_id) "
+    db.execute(text("INSERT INTO statement(type, title, amount, user_id) "
             "VALUES(:my_type, :title, :amount, :iden)"),
-    my_type = manual_type, title = manual_title, amount = float(manual_amount),
-    iden = session["user_id"])
+    {'my_type': manual_type, 'title': manual_title, 'amount': float(manual_amount),
+        'iden': session["user_id"]})
+    db.commit()
     return redirect("/history")
 
 @app.route("/edit_auto", methods = ["GET", "POST"])
@@ -230,8 +233,8 @@ def edit_auto():
     edit_frequency = request.form.get("edit_frequency")
     iden = session["user_id"]
     # see if the selected entry is in the database
-    result = engine.execute(text("SELECT * FROM auto_values WHERE id = :edit_id AND user_id = :iden"), 
-        edit_id = edit_id, iden = iden).fetchall()
+    result = db.execute(text("SELECT * FROM auto_values WHERE id = :edit_id AND user_id = :iden"), 
+        {'edit_id': edit_id, 'iden': iden}).fetchall()
     print(result)
     # invalid entry ID branch
     if len(result) == 0:
@@ -243,10 +246,10 @@ def edit_auto():
     else:
         # place either the input from the form or the original values of each relevant column
         # in these variables and use them for updating the database
-        my_type = engine.execute(text("SELECT CASE WHEN :edit_type = '' THEN type ELSE :edit_type END FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
-        edit_type = edit_type, edit_id = edit_id, iden = iden).fetchone()
-        my_title = engine.execute(text("SELECT CASE WHEN :edit_title = '' THEN title ELSE :edit_title END FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
-        edit_title = edit_title, edit_id = edit_id, iden = iden).fetchone()
+        my_type = db.execute(text("SELECT CASE WHEN :edit_type = '' THEN type ELSE :edit_type END FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
+        {'edit_type': edit_type, 'edit_id': edit_id, 'iden': iden}).fetchone()
+        my_title = db.execute(text("SELECT CASE WHEN :edit_title = '' THEN title ELSE :edit_title END FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
+        {'edit_title': edit_title, 'edit_id': edit_id, 'iden': iden}).fetchone()
         '''
         Old-version: overly complicated SQL query
         For some reason I thought that I would need to write a branch for each possible
@@ -257,17 +260,18 @@ def edit_auto():
         edit_amount = edit_amount, edit_id = edit_id, iden = iden).fetchone()
         '''
         if not edit_amount:
-            my_amount = engine.execute(text("SELECT amount FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
-                edit_id = edit_id, iden = iden).fetchone()
+            my_amount = db.execute(text("SELECT amount FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
+                {'edit_id': edit_id, 'iden': iden}).fetchone()
         else:
             # styling the variable as a tuple to fit the UPDATE statement properly
             my_amount = (edit_amount,)
-        my_frequency = engine.execute(text("SELECT CASE WHEN :edit_frequency = '' THEN frequency ELSE :edit_frequency END FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
-        edit_frequency = edit_frequency, edit_id = edit_id, iden = iden).fetchone()
+        my_frequency = db.execute(text("SELECT CASE WHEN :edit_frequency = '' THEN frequency ELSE :edit_frequency END FROM auto_values WHERE id = :edit_id AND user_id = :iden"),
+        {'edit_frequency': edit_frequency, 'edit_id': edit_id, 'iden': iden}).fetchone()
         # either update auto_values with the new values or keep the old ones if there are no new values
-        engine.execute(text("UPDATE auto_values SET type = :my_type, title = :my_title, amount = :my_amount, frequency = :my_frequency "
-                "WHERE id = :edit_id AND user_id = :iden"), edit_id = edit_id, my_type = my_type[0], my_title = my_title[0], 
-        my_amount = float(my_amount[0]), my_frequency = my_frequency[0], iden = iden)
+        db.execute(text("UPDATE auto_values SET type = :my_type, title = :my_title, amount = :my_amount, frequency = :my_frequency "
+                "WHERE id = :edit_id AND user_id = :iden"), {'edit_id': edit_id, 'my_type': my_type[0], 'my_title': my_title[0], 
+                        'my_amount': float(my_amount[0]), 'my_frequency': my_frequency[0], 'iden': iden})
+        db.commit()
     return redirect("/")
 
 @app.route("/edit_hist", methods = ["GET", "POST"])
@@ -282,8 +286,8 @@ def edit_hist():
     iden = session["user_id"]
 
     # invalid entry ID branch
-    if len(engine.execute(text("SELECT * FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
-     edit_hist_id = edit_hist_id,iden = iden).fetchall()) == 0:
+    if len(db.execute(text("SELECT * FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
+     {'edit_hist_id': edit_hist_id, 'iden': iden}).fetchall()) == 0:
         return jsonify({"error":"1"})
     # all other fields are empty branch
     elif not edit_hist_type and not edit_hist_title and not edit_hist_amount:
@@ -291,56 +295,57 @@ def edit_hist():
     # "proper" input branch
     else:
         # grab the old type of the selected entry and the user's cash from the users table
-        old_type = engine.execute(text("SELECT type FROM statement WHERE user_id = :iden AND id = :edit_hist_id")
-        , iden = iden, edit_hist_id = edit_hist_id).fetchone()[0]
-        cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = session["user_id"]).fetchone()
+        old_type = db.execute(text("SELECT type FROM statement WHERE user_id = :iden AND id = :edit_hist_id")
+        , {'iden': iden, 'edit_hist_id': edit_hist_id}).fetchone()[0]
+        cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': session["user_id"]}).fetchone()
         # prepare variables for updating the statement table
-        my_type = engine.execute(text("SELECT CASE WHEN :edit_hist_type = '' THEN type ELSE :edit_hist_type END FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
-        edit_hist_type = edit_hist_type, edit_hist_id = edit_hist_id, iden = iden).fetchone()
-        my_title = engine.execute(text("SELECT CASE WHEN :edit_hist_title = '' THEN title ELSE :edit_hist_title END FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
-        edit_hist_title = edit_hist_title, edit_hist_id = edit_hist_id, iden = iden).fetchone()
+        my_type = db.execute(text("SELECT CASE WHEN :edit_hist_type = '' THEN type ELSE :edit_hist_type END FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
+        {'edit_hist_type': edit_hist_type, 'edit_hist_id': edit_hist_id, 'iden': iden}).fetchone()
+        my_title = db.execute(text("SELECT CASE WHEN :edit_hist_title = '' THEN title ELSE :edit_hist_title END FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
+        {'edit_hist_title': edit_hist_title, 'edit_hist_id': edit_hist_id, 'iden': iden}).fetchone()
         '''
         Old version
         my_amount = engine.execute(text("SELECT CASE WHEN :edit_hist_amount = '' THEN amount ELSE :edit_hist_amount END FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
         edit_hist_amount = edit_hist_amount, edit_hist_id = edit_hist_id, iden = iden).fetchone()
         '''
         if not edit_hist_amount:
-            my_amount = engine.execute(text("SELECT amount FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
-             edit_hist_id = edit_hist_id, iden = iden).fetchone()
+            my_amount = db.execute(text("SELECT amount FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
+             {'edit_hist_id': edit_hist_id, 'iden': iden}).fetchone()
         else:
             my_amount = (edit_hist_amount,)
         # grab the old amount of the selected entry
-        amount = engine.execute(text("SELECT amount FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
-        edit_hist_id = edit_hist_id, iden = iden).fetchone()
+        amount = db.execute(text("SELECT amount FROM statement WHERE id = :edit_hist_id AND user_id = :iden"),
+        {'edit_hist_id': edit_hist_id, 'iden': iden}).fetchone()
         #update the users cash according to the input
         # if the old and new types are both "income", subtract the old amount from the user's cash
         # and add the new amount to it
         if my_type[0] == "income" and old_type == "income":
-            engine.execute(text("UPDATE users SET cash = :cash - :amount + :my_amount WHERE id = :iden"),
-            amount = amount[0], my_amount = float(my_amount[0]),
-            iden = iden, cash = cash[0])
+            db.execute(text("UPDATE users SET cash = :cash - :amount + :my_amount WHERE id = :iden"),
+            {'amount': amount[0], 'my_amount': float(my_amount[0]),
+                        'iden': iden, 'cash': cash[0]})
         # if the old type is "expense" while the new one is "income" add both the old and
         # the new amount to the cash
         elif my_type[0] == "income" and old_type == "expense":
-            engine.execute(text("UPDATE users SET cash = :cash + :amount + :my_amount WHERE id = :iden"),
-            amount = amount[0], my_amount = float(my_amount[0]),
-            iden = iden, cash = cash[0])
+            db.execute(text("UPDATE users SET cash = :cash + :amount + :my_amount WHERE id = :iden"),
+            {'amount': amount[0], 'my_amount': float(my_amount[0]),
+                        'iden': iden, 'cash': cash[0]})
         # if both the old type and the new one are "income" add the old amount to the user's cash
         # and subtract the new one from it
         elif my_type[0] == "expense" and old_type == "expense":
-            engine.execute(text("UPDATE users SET cash = :cash + :amount - :my_amount WHERE id = :iden"),
-            amount = amount[0], my_amount = float(my_amount[0]),
-            iden = iden, cash = cash[0])
+            db.execute(text("UPDATE users SET cash = :cash + :amount - :my_amount WHERE id = :iden"),
+            {'amount': amount[0], 'my_amount': float(my_amount[0]),
+                        'iden': iden, 'cash': cash[0]})
         # if the old type is "income" and the new type is "expense" subtract both the old and
         # the new amounts from the user's cash
         else:
-            engine.execute(text("UPDATE users SET cash = :cash - :amount - :my_amount WHERE id = :iden"),
-            amount = amount[0], my_amount = float(my_amount[0]),
-            iden = iden, cash = cash[0])
+            db.execute(text("UPDATE users SET cash = :cash - :amount - :my_amount WHERE id = :iden"),
+            {'amount': amount[0], 'my_amount': float(my_amount[0]),
+                        'iden': iden, 'cash': cash[0]})
 
-        engine.execute(text("UPDATE statement SET type = :my_type, title = :my_title, amount = :my_amount "
-                "WHERE id = :edit_hist_id AND user_id = :iden"), edit_hist_id = edit_hist_id,
-        my_type = my_type[0], my_title = my_title[0], my_amount = float(my_amount[0]) , iden = iden)
+        db.execute(text("UPDATE statement SET type = :my_type, title = :my_title, amount = :my_amount "
+                "WHERE id = :edit_hist_id AND user_id = :iden"), {'edit_hist_id': edit_hist_id,
+                        'my_type': my_type[0], 'my_title': my_title[0], 'my_amount': float(my_amount[0]) , 'iden': iden})
+        db.commit()
     return redirect("/history")
 
 @app.route("/delete_auto", methods = ["POST"])
@@ -354,16 +359,17 @@ def delete_auto():
     check = request.form.get("check")
 
     # check if the selected entry is in the database
-    result = engine.execute(text("SELECT * FROM auto_values WHERE id = :delete_id AND user_id = :iden"),
-     delete_id = delete_id, iden = iden).fetchall()
+    result = db.execute(text("SELECT * FROM auto_values WHERE id = :delete_id AND user_id = :iden"),
+     {'delete_id': delete_id, 'iden': iden}).fetchall()
     # invalid entry ID branch
     if len(result) == 0:
         return jsonify({"error": "1"})
     # valid input branch
     else:
         # delete appropriate row from the auto_values table
-        engine.execute(text("DELETE FROM auto_values WHERE id = :delete_id AND user_id = :iden"),
-        delete_id = delete_id, iden = iden)
+        db.execute(text("DELETE FROM auto_values WHERE id = :delete_id AND user_id = :iden"),
+        {'delete_id': delete_id, 'iden': iden})
+    db.commit()
     return redirect("/")
 
 @app.route("/delete_all_auto", methods = ["POST"])
@@ -375,7 +381,8 @@ def delete_all_auto():
     # if the "delete all recurring entries" checkbox is checked,
     # delete all recurring entries
     if check == "check":
-        engine.execute(text("DELETE FROM auto_values WHERE user_id = :iden"), iden = session["user_id"])
+        db.execute(text("DELETE FROM auto_values WHERE user_id = :iden"), {'iden': session["user_id"]})
+        db.commit()
         return redirect("/")
     else:
         return redirect("/")
@@ -391,27 +398,28 @@ def delete_hist():
     
 
     # invalid entry ID branch
-    if len(engine.execute(text("SELECT * FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
-    delete_hist_id = delete_hist_id, iden = iden).fetchall()) == 0:
+    if len(db.execute(text("SELECT * FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
+    {'delete_hist_id': delete_hist_id, 'iden': iden}).fetchall()) == 0:
         return jsonify({"error": "1"})
     # valid input branch
     else:
         # grab the type and amount of the selected entry and the user's cash
-        amount = engine.execute(text("SELECT amount FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
-        delete_hist_id = delete_hist_id, iden = iden).fetchone()
-        my_type = engine.execute(text("SELECT type FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
-        delete_hist_id = delete_hist_id, iden = iden).fetchone()
-        cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = iden).fetchone()[0]
+        amount = db.execute(text("SELECT amount FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
+        {'delete_hist_id': delete_hist_id, 'iden': iden}).fetchone()
+        my_type = db.execute(text("SELECT type FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
+        {'delete_hist_id': delete_hist_id, 'iden': iden}).fetchone()
+        cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': iden}).fetchone()[0]
         # if entry's type is income subtract its amount from the user's cash
         if my_type[0] == "income":
-            engine.execute(text("UPDATE users SET cash = :cash - :amount WHERE id = :iden"),
-            amount = amount[0], iden = iden, cash = cash)
+            db.execute(text("UPDATE users SET cash = :cash - :amount WHERE id = :iden"),
+            {'amount': amount[0], 'iden': iden, 'cash': cash})
         # if the entry's type is expense add its value to the user's cash
         else:
-            engine.execute(text("UPDATE users SET cash = :cash + :amount WHERE id = :iden"),
-            amount = amount[0], iden = iden, cash = cash)
-        engine.execute(text("DELETE FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
-        delete_hist_id = delete_hist_id, iden = iden)
+            db.execute(text("UPDATE users SET cash = :cash + :amount WHERE id = :iden"),
+            {'amount': amount[0], 'iden': iden, 'cash': cash})
+        db.execute(text("DELETE FROM statement WHERE id = :delete_hist_id AND user_id = :iden"),
+        {'delete_hist_id': delete_hist_id, 'iden': iden})
+        db.commit()
     return redirect("/history")
 
 @app.route("/delete_all_hist", methods = ["POST"])
@@ -425,13 +433,14 @@ def delete_all_hist():
     # entries from the statement, history and portfolio tables and reset
     # the starting balance of the account to 10000 USD
     if check == "check":
-        engine.execute(text("DELETE FROM statement WHERE user_id = :iden"), iden = iden)
-        engine.execute(text("DELETE FROM history WHERE user_id = :iden"), iden = iden)
-        engine.execute(text("DELETE FROM portfolio WHERE user_id = :iden"), iden = iden)
-        engine.execute(text("UPDATE users SET cash = 10000.00 WHERE id = :iden"), iden = iden)
-        cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = iden).fetchone()[0]
-        engine.execute(text("INSERT INTO statement (type, title, amount, user_id) "
-                "VALUES ('balance', 'starting balance', :cash, :iden)"), cash = cash, iden = iden)
+        db.execute(text("DELETE FROM statement WHERE user_id = :iden"), {'iden': iden})
+        db.execute(text("DELETE FROM history WHERE user_id = :iden"), {'iden': iden})
+        db.execute(text("DELETE FROM portfolio WHERE user_id = :iden"), {'iden': iden})
+        db.execute(text("UPDATE users SET cash = 10000.00 WHERE id = :iden"), {'iden': iden})
+        cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': iden}).fetchone()[0]
+        db.execute(text("INSERT INTO statement (type, title, amount, user_id) "
+                "VALUES ('balance', 'starting balance', :cash, :iden)"), {'cash': cash, 'iden': iden})
+        db.commit()
         return redirect("/history")
     else:
         return redirect("/history")
@@ -444,16 +453,17 @@ def edit_balance():
     edit_balance_amount = request.form.get("edit_balance_amount")
 
     # grab the user's cash an the old starting balance
-    cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = session["user_id"]).fetchone()
-    old_balance = engine.execute(text("SELECT amount FROM statement WHERE user_id = :iden AND title = 'starting balance'"),
-    iden = session["user_id"]).fetchone()
+    cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': session["user_id"]}).fetchone()
+    old_balance = db.execute(text("SELECT amount FROM statement WHERE user_id = :iden AND title = 'starting balance'"),
+    {'iden': session["user_id"]}).fetchone()
     # update the starting balance in the statement table
-    engine.execute(text("UPDATE statement SET amount = :amount WHERE user_id = :iden AND title = 'starting balance'"),
-    amount = float(edit_balance_amount), iden = session["user_id"])
+    db.execute(text("UPDATE statement SET amount = :amount WHERE user_id = :iden AND title = 'starting balance'"),
+    {'amount': float(edit_balance_amount), 'iden': session["user_id"]})
     # subtract the old balance from the user's cash and add the new one to it
-    engine.execute(text("UPDATE users SET cash = :cash - :old_balance + :amount WHERE id = :iden"),
-    amount = float(edit_balance_amount), old_balance = float(old_balance[0]),
-    iden = session["user_id"], cash = cash[0])
+    db.execute(text("UPDATE users SET cash = :cash - :old_balance + :amount WHERE id = :iden"),
+    {'amount': float(edit_balance_amount), 'old_balance': float(old_balance[0]),
+        'iden': session["user_id"], 'cash': cash[0]})
+    db.commit()
     # refresh page to showcase changes
     return redirect("/history")
 
@@ -462,14 +472,11 @@ def edit_balance():
 def stocks():
     """Show portfolio of stocks"""
     # prepare necessary variables
-    stocks = engine.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
-    cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = session["user_id"]).fetchone()
+    stocks = db.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
+    cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': session["user_id"]}).fetchone()
     # set up and style shares, current price value and grand total
-    shares = engine.execute(text("SELECT shares FROM portfolio WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
+    shares = db.execute(text("SELECT shares FROM portfolio WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
     i = len(stocks)
-    print(stocks)
-    print(cash)
-    print(shares)
     current_price = []
     for j in range(i) :
         current_price.append(lookup(stocks[j]["stock"])["price"])
@@ -483,6 +490,7 @@ def stocks():
     for n in range(i):
         current_price[n] = usd(current_price[n])
         value[n] = usd(value[n])
+    db.commit()
     # show the HTML table with these values to the user
     return render_template("stocks.html", i = i, stocks = stocks, current_price = current_price,
     value = value, cash = usd(cash[0]), grand_total = grand_total, shares = shares)
@@ -502,11 +510,10 @@ def buy():
         shares = request.form.get("shares")
         symbol = request.form.get("symbol")
         stock = lookup(symbol)
-        cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = session["user_id"]).fetchone()
+        cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': session["user_id"]}).fetchone()
         # check for valid input
         # return error codes as JSON objects so that JavaScript
         # can show appropriate messages to the user
-        # missing stock symbol
         # invalid stock symbol (no stock found)
         if not stock:
             return jsonify({"error": "1"})
@@ -515,33 +522,33 @@ def buy():
             return jsonify({"error": "2"})
         # valid input and sufficient funds
         else:
-            owned_stocks = engine.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden AND stock = :stock")
-            , iden = session["user_id"], stock = str(stock["symbol"])).fetchall()
-            print(owned_stocks)
+            owned_stocks = db.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden AND stock = :stock")
+            , {'iden': session["user_id"], 'stock': str(stock["symbol"])}).fetchall()
             # either create a new entry in the portfolio or update an existing one depending on
             # whether or not the user has shares in the stock chosen to be purchased
             if len(owned_stocks) == 0:
-                engine.execute(text("INSERT INTO portfolio(user_id, stock, current_price, shares) "
+                db.execute(text("INSERT INTO portfolio(user_id, stock, current_price, shares) "
                                 "VALUES(:user_id, :stock, :price, :shares)"),
-                user_id = session["user_id"], stock = str(stock["symbol"]), price = stock["price"],
-                shares = int(shares))
+                {'user_id': session["user_id"], 'stock': str(stock["symbol"]), 'price': stock["price"],
+                                'shares': int(shares)})
             else:
-                engine.execute(text("UPDATE portfolio SET current_price = :price, shares = shares + :my_shares"
-                                " WHERE user_id = :iden AND stock = :stock"), price = stock["price"], my_shares = int(shares),
-                iden = session["user_id"], stock = stock["symbol"])
+                db.execute(text("UPDATE portfolio SET current_price = :price, shares = shares + :my_shares"
+                                " WHERE user_id = :iden AND stock = :stock"), {'price': stock["price"], 'my_shares': int(shares),
+                                                'iden': session["user_id"], 'stock': stock["symbol"]})
             # add the transaction to the statement table as an expense
-            engine.execute(text("INSERT INTO statement(type, title, amount, user_id) "
-                        "VALUES ('expense', 'buying shares', :amount, :iden)"), iden = session["user_id"],
-            amount = int(shares) * stock["price"])
+            db.execute(text("INSERT INTO statement(type, title, amount, user_id) "
+                        "VALUES ('expense', 'buying shares', :amount, :iden)"), {'iden': session["user_id"],
+                                    'amount': (int(shares) * stock["price"])})
 
             # enter the transaction in history
-            engine.execute(text("INSERT INTO history(user_id, transaction_type, stock, price, shares)"
-                        " VALUES(:user_id, 'buy', :stock, :price, :shares)"), user_id = session["user_id"], stock = str(stock["symbol"]),
-             price = stock["price"], shares = int(shares))
+            db.execute(text("INSERT INTO history(user_id, transaction_type, stock, price, shares)"
+                        " VALUES(:user_id, 'buy', :stock, :price, :shares)"), {'user_id': session["user_id"], 'stock': str(stock["symbol"]),
+                                     'price': stock["price"], 'shares': int(shares)})
             # decrease the user's cash with the transactions's worth in the database
-            engine.execute(text("UPDATE users SET cash = cash - :total WHERE id = :iden"), total = int(shares) * stock["price"],
-            iden = session["user_id"])
+            db.execute(text("UPDATE users SET cash = cash - :total WHERE id = :iden"), {'total': (int(shares) * stock["price"]),
+                        'iden': session["user_id"]})
             # redirect user to the main page (redundant)
+            db.commit()
             return redirect("/")
 
 @app.route("/history")
@@ -549,23 +556,24 @@ def buy():
 def history():
     """Show history of transactions and finances"""
     # transactions
-    transaction_type = engine.execute(text("SELECT transaction_type FROM history WHERE user_id = :iden"),
-    iden = session["user_id"]).fetchall()
-    stock = engine.execute(text("SELECT stock FROM history WHERE user_id = :iden"),
-    iden = session["user_id"]).fetchall()
-    price = engine.execute(text("SELECT price FROM history WHERE user_id = :iden"),
-    iden = session["user_id"]).fetchall()
-    shares = engine.execute(text("SELECT shares FROM history WHERE user_id = :iden"),
-    iden = session["user_id"]).fetchall()
-    time = engine.execute(text("SELECT time FROM history WHERE user_id = :iden"),
-    iden = session["user_id"]).fetchall()
+    transaction_type = db.execute(text("SELECT transaction_type FROM history WHERE user_id = :iden"),
+    {'iden': session["user_id"]}).fetchall()
+    stock = db.execute(text("SELECT stock FROM history WHERE user_id = :iden"),
+    {'iden': session["user_id"]}).fetchall()
+    price = db.execute(text("SELECT price FROM history WHERE user_id = :iden"),
+    {'iden': session["user_id"]}).fetchall()
+    shares = db.execute(text("SELECT shares FROM history WHERE user_id = :iden"),
+    {'iden': session["user_id"]}).fetchall()
+    time = db.execute(text("SELECT time FROM history WHERE user_id = :iden"),
+    {'iden': session["user_id"]}).fetchall()
     i = len(time)
     # finances
-    id_ = engine.execute(text("SELECT id FROM statement WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
-    time2 = engine.execute(text("SELECT time FROM statement WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
-    amount = engine.execute(text("SELECT amount FROM statement WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
-    title = engine.execute(text("SELECT title FROM statement WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
-    type_ = engine.execute(text("SELECT type FROM statement WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
+    id_ = db.execute(text("SELECT id FROM statement WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
+    time2 = db.execute(text("SELECT time FROM statement WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
+    amount = db.execute(text("SELECT amount FROM statement WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
+    title = db.execute(text("SELECT title FROM statement WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
+    type_ = db.execute(text("SELECT type FROM statement WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
+    db.commit()
     k = len(time2)
     return render_template("history.html", stock = stock, i = i, price = price,
     transaction_type = transaction_type, shares = shares, time = time, time2 = time2,
@@ -583,8 +591,8 @@ def login():
     if request.method == "POST":
 
         # Query database for username
-        rows = engine.execute(text("SELECT * FROM users WHERE username = :username"),
-                          username=request.form.get("username")).fetchall()
+        rows = db.execute(text("SELECT * FROM users WHERE username = :username"),
+                          {'username': request.form.get("username")}).fetchall()
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
             return jsonify({"error": "1"})
@@ -637,25 +645,26 @@ def register():
         hashed = generate_password_hash(request.form.get("password"))
         username = request.form.get("username")
         # if the username is taken notify the user
-        result = engine.execute(text("SELECT * FROM users WHERE username = :username"),username = username).fetchall()
+        result = db.execute(text("SELECT * FROM users WHERE username = :username"),{'username': username}).fetchall()
         if len(result) != 0:
             return jsonify({"error": "1"})
         else:
             # add the user to the database
-            engine.execute(text("INSERT INTO users(username, hash) VALUES(:username, :hashed)"),
-        username = username, hashed = hashed)
+            db.execute(text("INSERT INTO users(username, hash) VALUES(:username, :hashed)"),
+        {'username':  username, 'hashed': hashed})
             # once the registration process is complete, log the user in
-            rows = engine.execute(text("SELECT * FROM users WHERE username = :username"), username = username).fetchall()
+            rows = db.execute(text("SELECT * FROM users WHERE username = :username"), {'username': username}).fetchall()
             session["user_id"] = rows[0]["id"]
             # if the user has entered a starting balance update their cash with the value
             if starting_balance:
-                engine.execute(text("UPDATE users SET cash = :starting_balance WHERE id = :iden"),
-                starting_balance = float(starting_balance), iden = session["user_id"])
+                db.execute(text("UPDATE users SET cash = :starting_balance WHERE id = :iden"),
+                {'starting_balance': float(starting_balance), 'iden': session["user_id"]})
             # grab the user's cash and present it as the starting balance in the statement table
-            cash = engine.execute(text("SELECT cash FROM users WHERE id = :iden"), iden = session["user_id"]).fetchone()
-            engine.execute(text("INSERT INTO statement(type, title, amount, user_id) "
-            "VALUES('balance', 'starting balance', :amount, :iden)"), amount = cash[0],
-            iden = session["user_id"])
+            cash = db.execute(text("SELECT cash FROM users WHERE id = :iden"), {'iden': session["user_id"]}).fetchone()
+            db.execute(text("INSERT INTO statement(type, title, amount, user_id) "
+            "VALUES('balance', 'starting balance', :amount, :iden)"), {'amount': cash[0],
+            'iden': session["user_id"]})
+            db.commit()
         return redirect("/")
 
     # user reached the route via GET (through a redirect or a link)
@@ -668,16 +677,16 @@ def register():
 def sell():
     """Sell shares of stock"""
     # prepary the variables used in sell.html
-    stocks = engine.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden"), iden = session["user_id"]).fetchall()
+    stocks = db.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden"), {'iden': session["user_id"]}).fetchall()
     i = len(stocks)
     # user reaches the route via the POST method (by filling out the HTML form)
     if request.method == "POST":
         # prepare the variables for the database operations
         my_symbol = str(request.form.get("symbol"))
-        my_stock = engine.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden AND stock = :stock"),
-        iden = session["user_id"], stock = my_symbol).fetchone()
-        my_shares = engine.execute(text("SELECT shares FROM portfolio WHERE user_id = :iden AND stock = :stock"),
-        iden = session["user_id"], stock = my_symbol).fetchone()
+        my_stock = db.execute(text("SELECT stock FROM portfolio WHERE user_id = :iden AND stock = :stock"),
+        {'iden': session["user_id"], 'stock': my_symbol}).fetchone()
+        my_shares = db.execute(text("SELECT shares FROM portfolio WHERE user_id = :iden AND stock = :stock"),
+        {'iden': session["user_id"], 'stock': my_symbol}).fetchone()
         selling_shares = request.form.get("shares")
         # catch any errors in the input and return the appropriate error code
         # stock not in portfolio branch
@@ -693,17 +702,19 @@ def sell():
         else:
             # enter the transaction into the statement table as an income entry
             my_price = lookup(my_symbol)["price"]
-            engine.execute(text("INSERT INTO statement(type, title, amount, user_id) "
+            db.execute(text("INSERT INTO statement(type, title, amount, user_id) "
                         "VALUES ('income', 'selling shares', :amount, :iden)"),
-            amount = my_price * int(selling_shares), iden = session["user_id"])
+            {'amount': (my_price * int(selling_shares)), 'iden': session["user_id"]})
             # add the transaction to the history table, update the user's cash and portfolio
-            engine.execute(text("INSERT INTO history(user_id, transaction_type, stock, price, shares)"
-                        " VALUES (:iden, 'sell', :stock, :price, :shares)"), iden = session["user_id"],
-            stock = my_symbol, price = my_price, shares = int(selling_shares))
-            engine.execute(text("UPDATE portfolio SET shares = shares - :selling_shares "
-                        "WHERE user_id = :iden AND stock = :stock"),selling_shares = int(selling_shares), iden = session["user_id"], stock = my_symbol)
-            engine.execute(text("UPDATE users SET cash = cash + :total WHERE id = :iden")
-            ,total = my_price * int(selling_shares), iden = session["user_id"])
+            db.execute(text("INSERT INTO history(user_id, transaction_type, stock, price, shares)"
+                        " VALUES (:iden, 'sell', :stock, :price, :shares)"), {'iden': session["user_id"],
+                                    'stock': my_symbol, 'price': my_price, 'shares': int(selling_shares)})
+            db.execute(text("UPDATE portfolio SET shares = shares - :selling_shares "
+                        "WHERE user_id = :iden AND stock = :stock"), 
+            {'selling_shares': int(selling_shares), 'iden': session["user_id"], 'stock': my_symbol})
+            db.execute(text("UPDATE users SET cash = cash + :total WHERE id = :iden")
+            , {'total': (my_price * int(selling_shares)), 'iden': session["user_id"]})
+        db.commit()
         # redirect the user to index.html
         return redirect("/")
     # user reached the route via the GET method
@@ -727,7 +738,7 @@ def change_pw():
         confirmation = str(request.form.get("confirmation"))
         # get the hashes for checking the password
         old_hash = generate_password_hash(old_password)
-        real_old_hash = engine.execute(text("SELECT hash FROM users WHERE id = :iden"), iden = session["user_id"]).fetchone()
+        real_old_hash = db.execute(text("SELECT hash FROM users WHERE id = :iden"), {'iden': session["user_id"]}).fetchone()
 
 
         # old pw wrong branch
@@ -738,10 +749,11 @@ def change_pw():
             # update the users table in the database by placing the new_password's hash
             # into the hash column (for the user who's currently logged in)
             new_hash = generate_password_hash(new_password)
-            engine.execute(text("UPDATE users SET hash = :new_hash WHERE id = :iden"), new_hash = new_hash,
-            iden = session["user_id"])
-            # redirect the user to the main page
-            return redirect("/")
+            db.execute(text("UPDATE users SET hash = :new_hash WHERE id = :iden"), {'new_hash': new_hash,
+                        'iden': session["user_id"]})
+        db.commit()
+        # redirect the user to the main page
+        return redirect("/")
 
 def errorhandler(e):
     """Handle error"""
