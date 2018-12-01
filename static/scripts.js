@@ -1,749 +1,536 @@
-// Execute when the DOM is fully loaded
-$(document).ready(function() {
-    // Execute when the buy form is submitted
-    $("#buy").on('submit', function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                shares: $("#buy_shares").val(),
-                symbol: $("#buy_symbol").val()
-            },
-            type: "POST",
-            url: "/buy"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // missing stock symbol branch
-            if (data.error == "1"){
-                $("#buyshares").hide();
-                $("#buysymbol").hide();
-                $("#buy_symbol").css({"border": "1px solid red"}).show();
-                $("#buy_shares").css({"border": "1px solid grey"});
-                $("#buysymbol").text("missing stock symbol").show();
-                $("#buy_symbol").focus();
-            }
-            // missing number of shares branch
-            else if (data.error == "2"){
-                $("#buy_shares").css({"border": "1px solid red"});
-                $("#buy_symbol").css({"border": "1px solid grey"});
-                $("#buysymbol").hide();
-                $("#buyshares").hide();
-                $("#buyshares").text("missing number of shares").show();
-                $("#buy_shares").focus();
-            }
-            // invalid number of shares branch
-            else if (data.error == "3"){
-                $("#buy_shares").css({"border": "1px solid red"});
-                $("#buy_symbol").css({"border": "1px solid grey"});
-                $("#buysymbol").hide();
-                $("#buyshares").hide();
-                $("#buyshares").text("invalid number of shares").show();
-                $("#buy_shares").focus();
-            }
-            // invalid stock symbol branch (the Yahoo Finance API couldn't find the stock)
-            else if (data.error == "4"){
-                $("#buysymbol").hide();
-                $("#buyshares").hide();
-                $("#buy_shares").css({"border": "1px solid grey"});
-                $("#buysymbol").text("Invalid stock symbol").show();
-                $("#buy_symbol").css({"border": "1px solid red"});
-                $("#buy_symbol").focus();
-            }
-            // insufficient funds branch
-            else if (data.error == "5"){
-                $("#buysymbol").hide();
-                $("#buyshares").hide();
-                $("#buyshares").text("Insufficient funds").show();
-                $("#buy_symbol").css({"border": "1px solid grey"});
-                $("#buy_shares").css({"border": "1px solid red"});
-                $("#buy_shares").focus();
-            }
-            // success
-            else {
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the sell form is submitted
-    $("#sell").on("submit", function(event) {
-       // Create a custom AJAX request
-        $.ajax({
-            data : {
-                shares: $("#sell_shares").val(),
-                symbol: $("#sell_symbol").val()
-            },
-            type: "POST",
-            url: "/sell"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // no stock selected branch
-            if (data.error == "1") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_shares").css({"border": "1px solid grey"}).show();
-                $("#sell_symbol").css({"border": "1px solid red"}).show();
-                $("#sellsymbol").text("no stock selected").show();
-                $("#sell_symbol").focus();
-            }
-            // missing number of shares branch
-            else if (data.error == "2") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_symbol").css({"border": "1px solid grey"}).show();
-                $("#sell_shares").css({"border": "1px solid red"}).show();
-                $("#sellshares").text("missing number of shares").show();
-                $("#sell_shares").focus();
-            }
-            // invalid number of shares branch (less than 1)
-            else if (data.error == "3") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_symbol").css({"border": "1px solid grey"}).show();
-                $("#sell_shares").css({"border": "1px solid red"}).show();
-                $("#sellshares").text("invalid number of shares").show();
-                $("#sell_shares").focus();
-            }
-            // stock is not in the portfolio branch (redundant)
-            else if (data.error == "4") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_shares").css({"border": "1px solid grey"}).show();
-                $("#sell_symbol").css({"border": "1px solid red"}).show();
-                $("#sellsymbol").text("you don't have the selected stock in your portfolio").show();
-                $("#sell_symbol").focus();
-            }
-            // no shares owned branch
-            else if (data.error == "5") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_shares").css({"border": "1px solid grey"}).show();
-                $("#sell_symbol").css({"border": "1px solid red"}).show();
-                $("#sellsymbol").text("you don't own any shares of this stock").show();
-                $("#sell_symbol").focus();
-            }
-            // not enough shares owned branch
-            else if (data.error == "6") {
-                $("#sellshares").hide();
-                $("#sellsymbol").hide();
-                $("#sell_symbol").css({"border": "1px solid grey"}).show();
-                $("#sell_shares").css({"border": "1px solid red"}).show();
-                $("#sellshares").text("you don't own enough shares for this transaction").show();
-                $("#sell_shares").focus();
-            }
-            // success
-            else {
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the change password form is submitted
-    $("#change_pw").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                old_password: $("#old_pw").val(),
-                new_password: $("#new_pw").val(),
-                confirmation: $("#change_confirmation").val()
-            },
-            type: "POST",
-            url: "/change-pw"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // missing old pw branch
-            if (data.error == "1") {
-                $("#newpw").hide();
-                $("#changeconf").hide();
-                $("#oldpw").text("missing old password").show();
-                $("#old_pw").css({"border": "1px solid red"});
-                $("#new_pw").css({"border": "1px solid grey"});
-                $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#old_pw").focus();
-            }
-            // missing new pw branch
-            else if (data.error == "2") {
-                $("#oldpw").hide();
-                $("#changeconf").hide();
-                $("#newpw").text("missing new password").show();
-                $("#old_pw").css({"border": "1px solid grey"});
-                $("#new_pw").css({"border": "1px solid red"});
-                $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#new_pw").focus()
-            }
-            // missing confirmation branch
-            else if (data.error == "3") {
-                $("#newpw").hide();
-                $("#oldpw").hide();
-                $("#changeconf").text("missing password confirmation").show();
-                $("#old_pw").css({"border": "1px solid grey"});
-                $("#new_pw").css({"border": "1px solid grey"});
-                $("#change_confirmation").css({"border": "1px solid red"});
-                $("#change_confirmation").focus()
+// Execute when the DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
 
-            }
-            // old and new pw are the same branch
-            else if (data.error == "4") {
-                $("#oldpw").hide();
-                $("#changeconf").hide();
-                $("#newpw").text("old and new passwords are the same").show();
-                $("#old_pw").css({"border": "1px solid red"});
-                $("#new_pw").css({"border": "1px solid red"});
-                $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#old_pw").focus()
-            }
-            // password mismatch branch
-            else if (data.error == "5") {
-                $("#newpw").hide();
-                $("#oldpw").hide();
-                $("#changeconf").text("new password and its confirmation do not match").show();
-                $("#old_pw").css({"border": "1px solid grey"});
-                $("#new_pw").css({"border": "1px solid red"});
-                $("#change_confirmation").css({"border": "1px solid red"});
-                $("#new_pw").focus()
-            }
-            // old pw wrong branch
-            else if (data.error == "6") {
-                $("#newpw").hide();
-                $("#changeconf").hide();
-                $("#oldpw").text("old password does not match records").show();
-                $("#old_pw").css({"border": "1px solid red"});
-                $("#new_pw").css({"border": "1px solid grey"});
-                $("#change_confirmation").css({"border": "1px solid grey"});
-                $("#old_pw").focus()
-            }
-            // success
-            else {
-                // redirect to the main page
-                window.location.href = "/";
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the register form is submitted
-    $("#register").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                username: $("#reg_username").val(),
-                password: $("#reg_pw").val(),
-                confirmation: $("#reg_confirmation").val(),
-                starting_balance: $("#starting_balance").val()
-            },
-            type: "POST",
-            url: "/register"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // missing username branch
-            if (data.error == "1") {
-                $("#regpw").hide();
-                $("#regconf").hide();
-                $("#regusername").text("missing username").show();
-                $("#reg_username").css({"border": "1px solid red"});
-                $("#reg_pw").css({"border": "1px solid grey"});
-                $("#reg_confirmation").css({"border": "1px solid grey"});
-                $("#reg_username").focus();
-            }
-            // missing password branch
-            else if (data.error == "2") {
-                $("#regusername").hide();
-                $("#regconf").hide();
-                $("#regpw").text("missing password").show();
-                $("#reg_pw").css({"border": "1px solid red"});
-                $("#reg_username").css({"border": "1px solid grey"});
-                $("#reg_confirmation").css({"border": "1px solid grey"});
-                $("#reg_pw").focus();
-            }
-            // missing confirmation branch
-            else if (data.error == "3") {
-                $("#regpw").hide();
-                $("#regusername").hide();
-                $("#regconf").text("missing password confirmation").show();
-                $("#reg_confirmation").css({"border": "1px solid red"});
-                $("#reg_pw").css({"border": "1px solid grey"});
-                $("#reg_username").css({"border": "1px solid grey"});
-                $("#reg_confirmation").focus();
-            }
-            // password mismatch branch
-            else if (data.error == "4") {
-                $("#regpw").hide();
-                $("#regusername").hide();
-                $("#regconf").text("Password and confirmation do not match").show();
-                $("#reg_confirmation").css({"border": "1px solid red"});
-                $("#reg_pw").css({"border": "1px solid red"});
-                $("#reg_username").css({"border": "1px solid grey"});
-                $("#reg_pw").focus();
-            }
-            // username taken branch
-            else if (data.error == "5") {
-                $("#regpw").hide();
-                $("#regconf").hide();
-                $("#regusername").text("username already taken").show();
-                $("#reg_username").css({"border": "1px solid red"});
-                $("#reg_pw").css({"border": "1px solid grey"});
-                $("#reg_confirmation").css({"border": "1px solid grey"});
-                $("#reg_username").focus();
-            }
-            // success
-            else {
-                // redirect to the main page
-                window.location.href = "/";
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the quote form is submitted
-    $("#quote").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                symbol: $("#quote_symbol").val()
-            },
-            type: "POST",
-            url: "/quote"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // missing or invalid input branch
-            if (data.error) {
-                $("#quote_symbol").css({"border": "1px solid red"});
-                $("#quotesymbol").text("invalid or missing stock symbol").show();
-                $("#quote_symbol").focus();
-            }
-            // success
-            else {
-                // return the price of the stock in a popup message (no redirect)
-                $("#quotesymbol").hide();
-                $("#quote_symbol").css({"border": "1px solid grey"});
-                alert("The price of a "+ String(data.symbol) + " stock is "+ String(data.price) + " USD.");
-            }
+	// Hide warnings by default
+	document.querySelectorAll(".alert-danger").forEach(div => {
 
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the login form is submitted
-    $("#login").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                username: $("#login_user").val(),
-                password: $("#login_pw").val()
-            },
-            type: "POST",
-            url: "/login"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // missing username branch
-            if (data.error == "1") {
-                $("#login_user").css({"border": "1px solid red"});
-                $("#loginpw").hide();
-                $("#login_pw").css({"border": "1px solid grey"});
-                $("#loginuser").text("missing username").show();
-                $("#login_user").focus();
-            }
-            // missing password branch
-            else if (data.error == "2") {
-                $("#login_user").css({"border": "1px solid grey"});
-                $("#loginuser").hide();
-                $("#login_pw").css({"border": "1px solid red"});
-                $("#loginpw").text("missing password").show();
-                $("#login_pw").focus();
-            }
-            // invalid input branch
-            else if (data.error == "3") {
-                $("#login_user").css({"border": "1px solid red"});
-                $("#loginpw").hide();
-                $("#login_pw").css({"border": "1px solid red"});
-                $("#loginuser").text("invalid username or password").show();
-                $("#login_user").focus();
-            }
-            // redirect user to the main page upon success
-            else {
-                window.location.href = "/";
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the "add recurring income/expense entry" form is submitted
-    $("#auto_values").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                frequency: $("#frequency").val(),
-                auto_type: $("#auto_type").val(),
-                auto_title: $("#auto_title").val(),
-                auto_amount: $("#auto_amount").val()
-            },
-            type: "POST",
-            url: "/auto_values"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing frequency branch
-            if (data.error == "1") {
-                $("#freq").text("Please select the frequency of the element").show();
-                $("#autotype").hide();
-                $("#autotitle").hide();
-                $("#autoamount").hide();
-                $("#frequency").css({"border": "1px solid red"});
-                $("#auto_type").css({"border": "1px solid grey"});
-                $("#auto_title").css({"border": "1px solid grey"});
-                $("#auto_amount").css({"border": "1px solid grey"});
-                $("#frequency").focus();
-            }
-            // missing type branch
-            else if (data.error == "2") {
-                $("#autotype").text("Please select the type of the element").show();
-                $("#freq").hide();
-                $("#autotitle").hide();
-                $("#autoamount").hide();
-                $("#frequency").css({"border": "1px solid grey"});
-                $("#auto_type").css({"border": "1px solid red"});
-                $("#auto_title").css({"border": "1px solid grey"});
-                $("#auto_amount").css({"border": "1px solid grey"});
-                // $("#auto_type").focus();
-            }
-            // missing title branch
-            else if (data.error == "3") {
-                $("#autotitle").text("Please enter the title of the element").show();
-                $("#freq").hide();
-                $("#autotype").hide();
-                $("#autoamount").hide();
-                $("#frequency").css({"border": "1px solid grey"});
-                $("#auto_type").css({"border": "1px solid grey"});
-                $("#auto_title").css({"border": "1px solid red"});
-                $("#auto_amount").css({"border": "1px solid grey"});
-                $("#auto_title").focus();
-            }
-            // missing or invalid amount branch
-            else if (data.error == "4") {
-                $("#autoamount").text("Please enter a valid amount for the element").show();
-                $("#freq").hide();
-                $("#autotitle").hide();
-                $("#autotype").hide();
-                $("#frequency").css({"border": "1px solid grey"});
-                $("#auto_type").css({"border": "1px solid grey"});
-                $("#auto_title").css({"border": "1px solid grey"});
-                $("#auto_amount").css({"border": "1px solid red"});
-                $("#auto_amount").focus();
-            }
-            // success
-            else {
-                // reload the main page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // if the "edit recurring element" button is clicked, display the
-    // edit form and hide the delete form (in case the delete button was pressed before)
-    $("#editauto").on("click", function() {
-        $("#edit_auto").css({"display": "block"});
-        $("#delete_auto").css({"display": "none"});
-    });
-    // if the "delete recurring element" button is clicked, display the
-    // delete form and hide the edit form (in case the edit button was pressed before)
-     $("#deleteauto").on("click", function() {
-        $("#delete_auto").css({"display": "block"});
-        $("#edit_auto").css({"display": "none"});
-    });
-    // if the "edit entry" button is clicked, display the
-    // edit form and hide the delete form (in case the delete button was pressed before)
-     $("#edithist").on("click", function() {
-        $("#edit_hist").css({"display": "block"});
-        $("#delete_hist").css({"display": "none"});
-    });
-    // if the "delete entry" button is clicked, display the
-    // delete form and hide the edit form (in case the edit button was pressed before)
-    $("#deletehist").on("click", function() {
-        $("#delete_hist").css({"display": "block"});
-        $("#edit_hist").css({"display": "none"});
-    });
-    // Execute when the "edit recurring income/expense entry" form is submitted
-    $("#edit_auto").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                edit_id: $("#edit_id").val(),
-                edit_type: $("#edit_type").val(),
-                edit_title: $("#edit_title").val(),
-                edit_amount: $("#edit_amount").val(),
-                edit_frequency: $("#edit_frequency").val()
-            },
-            type: "POST",
-            url: "/edit_auto"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing ID branch
-            if (data.error == "1"){
-                $("#editid").text("Missing entry ID").show();
-                $("#edit_id").css({"border": "1px solid red"});
-                $("#edit_amount").css({"border": "1px solid grey"});
-                $("#editamount").hide();
-            }
-            // Invalid ID branch
-            else if (data.error == "2"){
-                $("#editid").text("Invalid entry ID").show();
-                $("#edit_id").css({"border": "1px solid red"});
-                $("#edit_amount").css({"border": "1px solid grey"});
-                $("#editamount").hide();
-            }
-            // success
-            else {
-                // reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the "edit income/expense entry" form is submitted
-    $("#edit_hist").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                edit_hist_id: $("#edit_hist_id").val(),
-                edit_hist_type: $("#edit_hist_type").val(),
-                edit_hist_title: $("#edit_hist_title").val(),
-                edit_hist_amount: $("#edit_hist_amount").val(),
-            },
-            type: "POST",
-            url: "/edit_hist"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing entry ID branch
-            if (data.error == "1"){
-                $("#edithistid").text("Missing entry ID").show();
-                $("#edit_hist_id").css({"border": "1px solid red"});
-                $("#edit_hist_amount").css({"border": "1px solid grey"});
-                $("#edithistamount").hide();
-            }
-            // invalid entry ID branch
-            else if (data.error == "2"){
-                $("#edithistid").text("Invalid entry ID").show();
-                $("#edit_hist_id").css({"border": "1px solid red"});
-                $("#edit_hist_amount").css({"border": "1px solid grey"});
-                $("#edithistamount").hide();
-            }
-            // success
-            else {
-                // reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the "delete all recurring entries" checkbox is clicked
-    $("#delete_all_check").on("click", function() {
-        // If the checkbox is checked, set its value to check
-        if ($("#delete_all_check").is(":checked")){
-            $("#delete_all_check").val("check");
-        }
-        // If the checkbox is unchecked, set its value to uncheck
-        else {
-            $("#delete_all_check").val("uncheck");
-        }
-    });
-    // Execute when the "delete recurring income/expense entry" form is submitted
-    $("#delete_auto").on("submit", function() {
-        // create custom AJAX request
-        $.ajax({
-            data : {
-                delete_id: $("#delete_id").val(),
-                check: $("#delete_all_check").val()
-            },
-            type: "POST",
-            url: "/delete_auto"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing entry ID branch
-            if (data.error == "1"){
-                $("#delete_id").css({"border": "1px solid red"});
-                $("#deleteid").text("Missing entry ID").show();
-            }
-            // Invalid entry ID branch
-            else if (data.error == "2"){
-                $("#delete_id").css({"border": "1px solid red"});
-                $("#deleteid").text("Invalid entry ID").show();
-            }
-            // success
-            else {
-                //reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the "delete all entries" checkbox is clicked
-    $("#delete_all_check2").on("click", function() {
-        // If the checkbox is checked change its value to check
-        if ($("#delete_all_check2").is(":checked")){
-            $("#delete_all_check2").val("check");
-        }
-        // If the checkbox is unchecked, change its value to uncheck
-        else {
-            $("#delete_all_check2").val("uncheck");
-        }
-    });
-    // Execute when the "delete income/expense entry" form is submitted
-    $("#delete_hist").on("submit", function() {
-        // create custom AJAX request
-        $.ajax({
-            data : {
-                delete_hist_id: $("#delete_hist_id").val(),
-                check: $("#delete_all_check2").val()
-            },
-            type: "POST",
-            url: "/delete_hist"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing entry ID branch
-            if (data.error == "1"){
-                $("#delete_hist_id").css({"border": "1px solid red"});
-                $("#deletehistid").text("Missing entry ID").show();
-            }
-            // invalid entry ID branch
-            else if (data.error == "2"){
-                $("#delete_hist_id").css({"border": "1px solid red"});
-                $("#deletehistid").text("Invalid entry ID").show();
-            }
-            // success
-            else {
-                // reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the "add income/expense entry" form is submitted
-    $("#manual_values").on("submit", function(event) {
-        // Create a custom AJAX request
-        $.ajax({
-            data : {
-                manual_type: $("#manual_type").val(),
-                manual_title: $("#manual_title").val(),
-                manual_amount: $("#manual_amount").val()
-            },
-            type: "POST",
-            url: "/manual_values"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            console.log(data);
-            // missing type branch
-            if (data.error == "1") {
-                $("#manualtype").text("Please select the type of the element").show();
-                $("#manualtitle").hide();
-                $("#manualamount").hide();
-                $("#manual_type").css({"border": "1px solid red"});
-                $("#manual_title").css({"border": "1px solid grey"});
-                $("#manual_amount").css({"border": "1px solid grey"});
-                $("#manual_type").focus();
-            }
-            // missing title branch
-            else if (data.error == "2") {
-                $("#manualtitle").text("Please enter the title of the element").show();
-                $("#manualtype").hide();
-                $("#manualamount").hide();
-                $("#manual_type").css({"border": "1px solid grey"});
-                $("#manual_title").css({"border": "1px solid red"});
-                $("#manual_amount").css({"border": "1px solid grey"});
-                $("#manual_title").focus();
-            }
-            // missing or invalid amount branch
-            else if (data.error == "3") {
-                $("#manualamount").text("Please enter a valid amount for the element").show();
-                $("#manualtitle").hide();
-                $("#manualtype").hide();
-                $("#manual_type").css({"border": "1px solid grey"});
-                $("#manual_title").css({"border": "1px solid grey"});
-                $("#manual_amount").css({"border": "1px solid red"});
-                $("#manual_amount").focus();
-            }
-            // success
-            else {
-                // reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // when the "change starting balance" button is clicked show the appropriate form
-    $("#editbalance").on("click", function() {
-        $("#edit_balance").css({"display": "block"});
-        $("#editbalance").css({"display": "none"});
-    });
-    // Execute when the "change starting balance" form is submitted
-    $("#edit_balance").on("submit", function() {
-        // create custom AJAX request
-        $.ajax({
-            data : {
-                edit_balance_amount: $("#edit_balance_amount").val(),
-            },
-            type: "POST",
-            url: "/edit_balance"
-        })
-        // when the request is done running check for valid input
-        .done(function(data) {
-            // missing or invalid amount branch
-            if (data.error == "1") {
-                $("#editbalanceamount").text("Missing or invalid amount").show();
-                $("#edit_balance_amount").css({"border": "1px solid red"});
-                $("#edit_balance_amount").focus();
-            }
-            // success
-            else {
-                // reload page to showcase changes
-                location.reload();
-            }
-        });
-        // disable the default HTML form submission mechanism
-        event.preventDefault();
-    });
-    // Execute when the "delete all recurring entries" button is clicked
-    $("#deleteallauto").on("click", function() {
-        $("#delete_all_auto").css({"display": "block"});
-        $("#deleteallauto").css({"display": "none"});
-    });
-    // Execute when the "delete all entries" button is clicked
-    $("#deleteallhist").on("click", function() {
-        $("#delete_all_hist").css({"display": "block"});
-        $("#deleteallhist").css({"display": "none"});
-    });
-    // Execute when the "hide transaction history" button is clicked
-    $("#hidetransactions").on("click", function() {
-        $("#showtransactions").css({"display": "inline"});
-        $("#transactions").css({"display": "none"});
-        $("#hidetransactions").css({"display": "none"});
-    });
-    // Execute when the "show transaction history" button is clicked
-     $("#showtransactions").on("click", function() {
-        $("#hidetransactions").css({"display": "inline"});
-        $("#transactions").css({"display": "inline"});
-        $("#showtransactions").css({"display": "none"});
-    });
+	div.style.visibility = "hidden";
+	})
+	// JS for the Stocks page
+	if (window.location.href == 'http://' + document.domain + ':' + location.port + "/stocks") {
+		
+		// Send an AJAX request when the user wants to buy shares
+		document.querySelector("#buy").onsubmit = event => {
+
+			var my_item = {"shares": document.querySelector("#buy_shares").value,
+							"symbol": document.querySelector("#buy_symbol").value};
+			myRequest(event, "/buy", my_item);
+		}
+
+		// Send an AJAX request when the user wants to sell shares
+		document.querySelector("#sell").onsubmit = event => {
+			var my_item = {"shares": document.querySelector("#sell_shares").value,
+							"symbol": document.querySelector("#sell_symbol").value};
+			myRequest(event, "/sell", my_item);
+		}
+
+		// Send an AJAX request when the user wants to get price a quote for a stock
+		document.querySelector("#quote").onsubmit = event => {
+			
+			var my_item = {"symbol": document.querySelector("#quote_symbol").value};
+			myRequest(event, "/quote", my_item);
+		
+		}
+	}
+
+	// JS for the Register page
+	else if (window.location.href == 'http://' + document.domain + ':' + location.port + "/register") {
+		
+		// Execute when the user submits the register form
+		document.querySelector("#register").onsubmit = event => {
+			
+			// Grab HTML elements that are needed
+			var regusername = document.querySelector("#regusername");
+			var reg_username = document.querySelector("#reg_username");
+			var regpw = document.querySelector("#regpw");
+			var reg_pw = document.querySelector("#reg_pw");
+			var regconf = document.querySelector("#regconf");
+			var reg_confirmation = document.querySelector("#reg_confirmation");
+
+			// Prepare data for the AJAX request
+			var my_item = {"username": reg_username.value, "password": reg_pw.value,
+							"confirmation": reg_confirmation.value,
+							 "starting_balance": document.querySelector("#starting_balance").value};
+			
+			// Password mismatch
+			if (reg_pw.value != reg_confirmation.value) {
+				
+				// Show appropriate message to guide the user
+				threeInputs("two_wrong",regusername, reg_username, regpw, 
+					"The password and its confirmation do not match", reg_pw, regconf, reg_confirmation);
+				return false;
+			}
+			// Send AJAX request if all checks are cleared
+			myRequest(event, "/register", my_item);
+		}	
+	}
+	// JS for the Change Password page
+	else if (window.location.href == 'http://' + document.domain + ':' + location.port + "/change-pw") {
+		
+		// Execute when the user submits the change password form
+		document.querySelector("#change_pw").onsubmit = event => {
+			
+			// Grab HTML elements that are needed
+			var oldpw = document.querySelector("#oldpw");
+			var old_pw = document.querySelector("#old_pw");
+			var newpw = document.querySelector("#newpw");
+			var new_pw = document.querySelector("#new_pw");
+			var changeconf = document.querySelector("#changeconf");
+			var change_confirmation = document.querySelector("#change_confirmation");
+
+			// Prepare data for the AJAX request
+			var my_item = {"old_password": old_pw.value, "new_password": new_pw.value,
+						"confirmation": change_confirmation.value};
+			
+			// New password same as old
+			if (old_pw.value == new_pw.value) {
+
+				// Show appropriate message to guide the user
+				threeInputs("two_wrong", changeconf, change_confirmation, newpw, "Old and new passwords are the same",
+					new_pw, oldpw, old_pw);
+				return false;
+			
+			}
+
+			// Password mismatch
+			else if (new_pw.value != change_confirmation.value) {
+
+				// Show appropriate message to guide the user
+				threeInputs("two_wrong", oldpw, old_pw, changeconf, "The new password and its confirmation do not match",
+					change_confirmation, newpw, new_pw);
+				return false;
+			}
+
+			// Send an AJAX request if all checks are cleared
+			myRequest(event, "/change-pw", my_item);
+		}
+
+	}
+
+	// JS for the Login page
+	else if (window.location.href == 'http://' + document.domain + ':' + location.port + "/login") {
+
+		// Send an AJAX request when the user submits the login form
+		document.querySelector("#login").onsubmit = event => {
+
+			var my_item = {"username": document.querySelector("#login_user").value,
+							"password": document.querySelector("#login_pw").value};
+
+			myRequest(event, "/login", my_item);
+		}
+	}
+	// JS for the history page
+	else if (window.location.href == 'http://' + document.domain + ':' + location.port + "/history") {
+
+		// Delete the selected item from the financial history
+		deleteItem(".delete_hist", "delete_hist_id", "/delete_hist");
+
+		// Show the edit form for the selected item from the financial history
+		editItem(".edit_hist", "#edit_hist", "#edit_hist_id");
+
+		// Edit the selected entry when the user submits the edit entry form
+		document.querySelector("#edit_hist").onsubmit = event => {
+
+			var my_item = {"edit_hist_id": document.querySelector("#edit_hist_id").value, 
+			"edit_hist_type": document.querySelector("#edit_hist_type").value, 
+			"edit_hist_title": document.querySelector("#edit_hist_title").value,
+			"edit_hist_amount": document.querySelector("#edit_hist_amount").value};
+
+			myRequest(event, "/edit_hist", my_item);
+		}
+
+		// Disable the delete all button if the financial history is empty
+		emptyTable(".delete_hist", "#delete_all_hist");
+
+		// Execute when the user clicks on the delete all button
+		document.querySelector("#delete_all_hist").onclick = event => {
+
+			// Ask the user to confirm their intentions
+			var c = confirm("You are about to delete the financial history, the stock portfolio " +
+				"and the transaction history of your account. Your account will be emptied, and its "+
+				"starting balance will be reset to 10,000.00 USD." +
+				" Do you wish to proceed?");
+
+			/* Empty the user's financial history, stock portfolio and their transaction history,
+			then reset their starting balance to 10K USD */
+			if (c == true) {
+				var my_item = {"delete_all_check2": "check"};
+
+				myRequest(event, "/delete_all_hist", my_item);
+			}
+		}
+
+		/* Show the edit starting balance form when the user clicks on the "Change starting balance" button
+		 and hide the button itself*/
+		document.querySelector("#editbalance").onclick = () => {
+
+			document.querySelector("#edit_balance").style.display = "block";
+			document.querySelector("#editbalance").style.display = "none";
+		}
+		
+		/* Hide the transaction history table when the user clicks on the "Hide transaction history" button
+		 Hide the button itself and show the "Show transaction history" button instead*/
+		document.querySelector("#hidetransactions").onclick = () => {
+
+			document.querySelector("#showtransactions").style.display = "inline";
+			document.querySelector("#transactions").style.display = "none";
+			document.querySelector("#hidetransactions").style.display = "none";
+		}
+
+		/* Show the transaction history table and the "Hide transaction history" button 
+		 when the user clicks on the "Show transaction history" button and hide the button itself*/
+		document.querySelector("#showtransactions").onclick = () => {
+
+			document.querySelector("#showtransactions").style.display = "none";
+			document.querySelector("#transactions").style.display = "table";
+			document.querySelector("#hidetransactions").style.display = "inline";
+		}
+	}
+	// JS for the main page
+	else {
+		
+		// Delete the selected item from the recurring entries table
+		deleteItem(".delete_auto", "delete_id", "/delete_auto");
+
+		// Show the edit recurring entry form for the selected entry
+		editItem(".edit_auto", "#edit_auto", "#edit_id");
+
+		// Edit the selected entry when the user submits the edit recurring entry form
+		document.querySelector("#edit_auto").onsubmit = event => {
+
+			var my_item = {"edit_id": document.querySelector("#edit_id").value, 
+			"edit_type": document.querySelector("#edit_type").value, 
+			"edit_title": document.querySelector("#edit_title").value,
+			"edit_amount": document.querySelector("#edit_amount").value,
+			"edit_frequency": document.querySelector("#edit_frequency").value};
+
+			myRequest(event, "/edit_auto", my_item);
+		}
+		
+		// Disable the delete all button if the recurring entries table is empty
+		emptyTable(".delete_auto", "#delete_all_auto");
+
+		// Execute when the user clicks on the delete all button
+		document.querySelector("#delete_all_auto").onclick = event => {
+
+			// Ask the user to confirm their intentions
+			var c = confirm("You are about to delete all recurring entries that belong to your account." +
+				" Do you wish to proceed?");
+
+			// Empty the recurring entries table after receiving confirmation
+			if (c == true) {
+				var my_item = {"delete_all_check": "check"};
+
+				myRequest(event, "/delete_all_auto", my_item);
+			}
+		}
+	}
+
 });
+
+function invalidInput(div_to_hide, right_part, div_to_show, error_message, wrong_part) {
+/* Help users find the issue with their input using messages and CSS */
+
+	div_to_hide.style.visibility = "hidden";
+	right_part.style.border = "1px solid #ced4da";
+	div_to_show.innerHTML = error_message;
+	div_to_show.style.visibility = "visible";
+	wrong_part.style.border = "1px solid red";
+	wrong_part.focus();
+}
+
+function threeInputs(state, div_to_hide, right_part, div_to_show, error_message, wrong_part, third_div, third_part) {
+/* Similiar to the invalidInput function, but tailored for forms with three possible sources of error */
+	div_to_hide.style.visibility = "hidden";
+	right_part.style.border = "1px solid #ced4da";
+	div_to_show.innerHTML = error_message;
+	div_to_show.style.visibility = "visible";
+	wrong_part.style.border = "1px solid red";
+	third_div.style.visibility = "hidden";
+	wrong_part.focus();
+
+	/* Either the user has two right inputs or two wrong ones. The third form element is styled depending on 
+	 which one is the case. */
+	if (state == "two_right") {
+
+		third_part.style.border = "1px solid #ced4da";
+	}
+	else {
+
+		third_part.style.border = "1px solid red";
+	}
+
+}
+
+function myRequest(event, url, items) {
+/* Sends an AJAX request to specific URLs with data that was organized prior to sending the request */
+	
+	// Create and open the request
+	const request = new XMLHttpRequest();
+	request.open("POST", url);
+
+	// Do something after receiving the server's response
+	request.onload = () => {
+
+		// Parse the response
+		if (request.responseText[0] == "{") {
+			 var my_data = JSON.parse(request.responseText);
+		}
+		else {
+			 var my_data = {"error": "nope"};
+		}
+
+		// React differently depending on which URL is involved
+		if (url == "/buy") {
+			
+			buyOnLoad(my_data);
+		}
+		else if (url == "/sell") {
+
+			sellOnLoad(my_data);
+		}
+		else if (url == "/quote") {
+
+			quoteOnLoad(my_data);
+		}
+		else if (url == "/register") {
+
+			registerOnLoad(my_data);
+		}
+		else if( url == "/change-pw") {
+			changeOnLoad(my_data);
+		}
+		else if (url == "/login") {
+			loginOnLoad(my_data);
+		}
+		else {
+			location.reload();
+		}
+	}
+
+	// Send the data that was passed in to the server
+	const data = new FormData();
+
+	for (var key in items) {
+
+		data.append(key, items[key]);
+	}
+
+	request.send(data);
+
+	// Prevent default mechanisms like form submission
+	event.preventDefault();
+}
+
+function buyOnLoad(data) {
+	/* Handle the server's response to submitting the buy shares form */
+
+	// grab HTML elements that are needed
+	var buysymbol = document.querySelector("#buysymbol");
+	var buyshares = document.querySelector("#buyshares");
+	var buy_symbol = document.querySelector("#buy_symbol");
+	var buy_shares = document.querySelector("#buy_shares");
+
+	// Notify the user that the stock symbol they entered is invalid
+	if (data["error"] == "1") {
+
+		invalidInput(buyshares, buy_shares, 
+			buysymbol, "Invalid stock symbol", buy_symbol);
+	
+	}
+
+	// Notify the user that they can't afford the transaction they decided on
+	else if(data["error"] == "2") {
+
+		invalidInput(buysymbol, buy_symbol, 
+			buyshares, "Insufficient funds", buy_shares);
+	}
+
+	// Reload the page if the transaction was successful
+	else {
+
+		location.reload();
+	}
+
+}
+
+function sellOnLoad(data) {
+/* Handle the server's response to submitting the sell shares form */
+	
+	// Grab the HTML elements that are needed
+	var sellsymbol = document.querySelector("#sellsymbol");
+	var sell_symbol = document.querySelector("#sell_symbol");
+	var sellshares = document.querySelector("#sellshares");
+	var sell_shares = document.querySelector("#sell_shares");
+
+	// Wrong stock
+	if (data["error"] == "1") {
+
+		invalidInput(sellshares, sell_shares, sellsymbol, 
+			"You don't have the selected stock in your portfolio", sell_symbol);
+	}
+
+	// No shares of the selected stock
+	else if (data["error"] == "2") {
+
+		invalidInput(sellshares, sell_shares, sellsymbol, 
+			"You don't own any shares of this stock", sell_symbol);
+	}
+
+	// Not enough shares for the transaction
+	else if (data["error"] == "3") {
+
+		invalidInput(sellsymbol, sell_symbol, sellshares, 
+			"You don't own enough shares for this transaction", sell_shares);
+	}
+
+	// Success
+	else {
+
+		location.reload();
+
+	}
+}
+
+function quoteOnLoad(data) {
+/* Handle the server's response to submitting the quote form*/
+
+	// Grab the HTML elements that are needed
+	var quotesymbol = document.querySelector("#quotesymbol");
+	var quote_symbol = document.querySelector("#quote_symbol");
+
+	// Invalid stock symbol
+	if (data["error"]) {
+
+		quotesymbol.style.visibility = "visible";
+		quote_symbol.style.border = "1px solid red";
+		quotesymbol.innerHTML = "Invalid stock symbol";
+		quote_symbol.focus();
+	}
+	
+	// Success
+	else {
+
+		// Show an alert with the info the user requested
+		quotesymbol.style.visibility = "hidden";
+		quote_symbol.style.border = "1px solid #ced4da";
+		alert("The price of a " + String(data["symbol"]) + " stock is " + String(data["price"] + " USD."));
+	}
+}
+
+function registerOnLoad(data) {
+/* Handle the server's response to submitting the register form */
+
+	// Grab the HTML elements that are needed
+	var regusername = document.querySelector("#regusername");
+	var reg_username = document.querySelector("#reg_username");
+	var regpw = document.querySelector("#regpw");
+	var reg_pw = document.querySelector("#reg_pw");
+	var regconf = document.querySelector("#regconf");
+	var reg_confirmation = document.querySelector("#reg_confirmation");
+	
+	// Username taken
+	if (data["error"] == "1") {
+
+		threeInputs("two_right", regpw, reg_pw, regusername, "Username already taken",
+			reg_username, regconf, reg_confirmation);
+	}
+
+	// Success
+	else {
+
+		// Redirect user to the main page
+		window.location.href = "/";
+	}
+
+}
+
+function changeOnLoad(data) {
+/* Handle the server's response to submitting the change password form*/
+	
+	// Grab the HTML elements that are needed
+	var oldpw = document.querySelector("#oldpw");
+	var old_pw = document.querySelector("#old_pw");
+	var newpw = document.querySelector("#newpw");
+	var new_pw = document.querySelector("#new_pw");
+	var changeconf = document.querySelector("#changeconf");
+	var change_confirmation = document.querySelector("#change_confirmation");
+
+	// Old password does not match records
+	if (data["error"] == "1") {
+
+		threeInputs("two_right", newpw, new_pw, oldpw, "Old password does not match records",
+			old_pw, changeconf, change_confirmation);
+	}
+
+	// Success
+	else {
+
+		// Redirect user to the main page
+		window.location.href = "/"
+	}
+}
+
+function loginOnLoad(data) {
+/* Handle the server's response to submitting the login form */
+
+	// Invalid credentials
+	if (data["error"] == "1") {
+
+		document.querySelector("#loginpw").style.visibility = "hidden";
+		document.querySelector("#login_pw").style.border = "1px solid red";
+		document.querySelector("#loginuser").style.visibility = "visible";
+		document.querySelector("#loginuser").innerHTML = "Invalid username or password";
+		document.querySelector("#login_user").style.border = "1px solid red";
+		document.querySelector("#login_user").focus();
+	}
+
+	// Success
+	else {
+
+		// Redirect user to the main page
+		window.location.href = "/"
+	}
+}
+
+function deleteItem(my_class, my_key, my_url) {
+/* Sends an AJAX request to delete the specified item from the specified table */
+
+	// Execute when a delete button from the specified class is clicked
+	document.querySelectorAll(my_class).forEach(button => {
+
+			// Send the AJAX request
+			button.onclick = event => {
+				
+				var my_item = {[my_key]: button.dataset.my_id};
+				myRequest(event, my_url, my_item);
+
+			}
+		});
+}
+
+function editItem(my_class, my_form, my_div) {
+/* Shows the specified edit form for the specified element in the specified table*/
+
+	document.querySelectorAll(my_class).forEach(button => {
+			button.onclick = () => {
+
+				document.querySelector(my_form).style.display = "block";
+				document.querySelector(my_div).value = button.dataset.my_id;
+				document.querySelector(my_div).innerHTML = `Entry ID: <strong>${button.dataset.my_id}</strong>`;
+			}
+		});
+}
+
+function emptyTable(my_class, my_button) {
+/* Checks if the specified table is empty, disables/enables the delete all button accordingly*/
+
+	if (document.querySelectorAll(my_class).length == 0) {
+
+		document.querySelector(my_button).disabled = true;
+	}
+	else {
+
+		document.querySelector(my_button).disabled = false;
+	}
+}

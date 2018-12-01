@@ -42,7 +42,7 @@ def lookup(symbol):
 
     # Contact API
     try:
-        response = requests.get(f"https://api.iextrading.com/1.0/stock/{urllib.parse.quote_plus(symbol)}/quote")
+        response = requests.get("https://api.iextrading.com/1.0/stock/{0}/quote".format(urllib.parse.quote_plus(symbol)))
         response.raise_for_status()
     except requests.RequestException:
         return None
@@ -61,7 +61,7 @@ def lookup(symbol):
 
 def usd(value):
     """Format value as USD."""
-    return f"${value:,.2f}"
+    return "${0:.2f}".format(value)
 
 def daily():
     '''Add entries to the statement table every day'''
