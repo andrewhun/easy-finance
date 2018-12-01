@@ -1,3 +1,13 @@
+Easy Finance v.1.2
+
+Changes compared to v1.1:
+
+- Replaced JQuery with ES6
+- An attempt was made to improve the overall design of the JavaScript module (this basically means the (over)use of functions wherever applicable)
+- The way users can edit and delete table elements was improved. Added Edit and Delete buttons to each of the elements and placed the delete all buttons at the bottom of both tables (financial history, recurring entries)
+- Got rid of some of the now redundant elements, such as the delete entry forms and a few buttons
+- The user is now asked to confirm their decision to empty tables via JavaScript's confirm() method.
+
 Easy Finance v1.1
 
 Changes compared to the original version:
