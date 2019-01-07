@@ -1,0 +1,138 @@
+{% extends "finance/base.html" %}
+
+{% block title %}
+    Transaction history
+{% endblock %}
+
+{% block main %}
+    <div main>
+        <button class="btn btn-primary" type="button" id = "editbalance">Change starting balance</button>
+        <form style = "display: none;" id = "edit_balance" name ="edit_balance" action = "/edit_balance/" method = "POST">
+            <div class = "form-group" style = "padding-top: 10px">
+                {% csrf_token %}
+                <p> New starting balance:
+                    <input required type = "number" step = "any" min = "0" id = "edit_balance_amount" name = "edit_balance_amount" placeholder = "Amount"></input>
+                </p>
+            <div class = "alert alert-danger" id = "editbalanceamount"></div>
+            </div>
+            <button class="btn btn-primary" type="submit">Change starting balance</button>
+        </form>
+        <div tables>
+           <table style = "padding-top: 10px" class = "table table-striped table-dark" align = "center">
+                <h2>Financial history</h2>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Time</th>
+                </tr>
+                {% for statement in financial_statement %}
+                    <tr>
+                        <td>{{ statement.id }}</td>
+                        <td>{{ statement.statement_type }}</td>
+                        <td>{{ statement.title }}</td>
+                        <td>{{ statement.amount }}</td>
+                        <td>{{ statement.time }}</td>
+
+                        {% if statement.title != "Buying shares" and statement.title != "Selling shares" and statement.statement_type != "Balance" %}
+                            <td><button class = "edit_hist btn btn-primary" data-my_id = "{{ statement.id }}">Edit</button></td>
+                            <td><button class = "delete_hist btn btn-primary" data-my_id = "{{ statement.id }}">Delete</button>
+                        {% else %}
+                            <td></td>
+                            <td></td>
+                        {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><button id = "delete_all_hist" class = "btn btn-primary">Delete All</button></td>
+                </tr>
+            </table>
+        </div>
+        <form style = "display: none" id = "edit_hist" name ="edit_hist" action = "/edit_hist/" method = "POST">
+            <div class = "form-group" style = "padding-top: 10px">
+                <h2>Edit income/expense entry</h2>
+                {% csrf_token %}
+                <div id = "edit_hist_id" name = "edit_hist_id"></div>
+                <div class = "alert alert-danger" id = "edithistid"></div>
+                <p>New type:
+                <select name = "edit_hist_type" id = "edit_hist_type" size = "2">
+                    <option value = "Income">Income</option>
+                    <option value = "Expense">Expense</option>
+                </select>
+                (optional)
+                </p>
+                <p>New title:
+                <input type = "text" id = "edit_hist_title" name = "edit_hist_title" placeholder = "Title"></input>
+                (optional)
+                </p>
+                <p>New amount:
+                <input type = "number" placeholder = "Amount" step = "any" min = "0" id = "edit_hist_amount" name = "edit_hist_amount"></input>
+                (optional)
+                </p>
+                <div class = "val_error" id = "edithistamount"></div>
+            </div>
+            <button class="btn btn-primary" type="submit">Edit entry</button>
+        </form>
+        <form style = "padding-top: 10px" id = "manual_values" name ="manual_values" action = "/manual_values/" method = "POST">
+            <h2>Add income/expense entry</h2>
+            <div class = "form-group">
+                {% csrf_token %}
+               <p> Type: <select required name = "manual_type" id = "manual_type" size = "2">
+                    <option id = "manual_income" name = "manual_income" value = "Income">Income</option>
+                    <option id = "manual_expense" name = "manual_expense" value = "Expense">Expense</option>
+                </select>
+               </p>
+               <div id = "manualtype" class = "val_error"></div>
+               <p> Title:
+                   <input required id = "manual_title" name = "manual_title" type = "text" placeholder = "title">
+                   </input>
+               </p>
+               <div id = "manualtitle" class = "val_error"></div>
+               <p> Amount:
+                   <input required id = "manual_amount" name = "manual_amount" type = "number" step = "any" min = "0" placeholder = "amount">
+                   </input>
+               </p>
+               <div id = "manualamount" class = "val_error"></div>
+            </div>
+            <button class="btn btn-primary" type="submit">Enter element</button>
+        </form>
+ 
+        <div style = "padding-top: 10px">
+            <button class="btn btn-primary" type="button" id = "hidetransactions">Hide transaction history</button>
+        </div>
+        <div style = "padding-top: 10px">
+            <button style = "display: none;" class="btn btn-primary" type="button" id = "showtransactions">Show transaction history</button>
+        </div>
+        <div tables style = "overflow-x:auto;margin-top:10px;" align = "center">
+            <table  id = "transactions" class = "table table-striped table-dark">                
+                <thead>
+                    <h2>Transaction history</h2>
+                </thead>
+                <tr>
+                    <th>Transaction</th>
+                    <th>Stock</th>
+                    <th>Shares</th>
+                    <th>Price per Share</th>
+                    <th>Time</th>
+                </tr>
+                {% for transaction in transaction_history %}
+                    <tr>
+                        <td>{{ transaction.transaction_type }}</td>
+                        <td>{{ transaction.stock }}</td>
+                        <td>{{ transaction.shares }}</td>
+                        <td>{{ transaction.price }}</td>
+                        <td>{{ transaction.time }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+{% endblock %}

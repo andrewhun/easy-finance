@@ -1,0 +1,83 @@
+{% extends "finance/base.html" %}
+
+{% block title %}
+    Stocks summary
+{% endblock %}
+
+{% block main %}
+    <div main>
+        <div tables>
+            <table class = "table table-striped table-dark" align = "center">
+                <h2>Portfolio</h2>
+                <tr>
+                    <th>Stock</th>
+                    <th>Shares</th>
+                    <th>Current price</th>
+                    <th>Value</th>
+                </tr>
+                {% for entry in portfolio %}
+                    <tr>
+                        <th>{{ entry.stock }}</th>
+                        <td>{{ entry.shares }}</td>
+                        <td>{{ entry.current_price }}</td>
+                        <td>{{ entry.value }}</td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <th>Cash</th>
+                    <td></td>
+                    <td></td>
+                    <td>{{ user_cash }}</td>
+                </tr>
+                <tr>
+                    <th>Grand total</th>
+                    <td></td>
+                    <td></td>
+                    <td>{{ grand_total }}</td>
+                </tr>
+            </table>
+        </div>
+        <h2 style = "padding-top: 50px">Get a quote</h2>
+        <form id = "quote" action="/quote/" method="post">
+            <p>Please enter the symbol of the stock you wish to get a quote of:</p>
+            <div class="form-group">
+                <input required id = "quote_symbol" autocomplete="off" autofocus class="form-control" name="symbol" placeholder="Stock Symbol" type="text"/>
+                <div id = "quotesymbol" class = "alert alert-danger"></div>
+            </div>
+                <button class="btn btn-primary" type="submit">Get quote</button>
+        </form>
+        <h2 style = "padding-top: 50px">Buying shares</h2>
+        <form id = "buy" action="/buy/" method="post">
+        <p>Please enter the symbol of the stock you wish to buy:</p>
+        <div class="form-group">
+            <input required id = "buy_symbol" autocomplete="off" autofocus class="form-control" name="symbol" placeholder="Stock Symbol" type="text"/>
+            <div id = "buysymbol" class = "alert alert-danger"></div>
+        </div>
+        <p>Please enter the number of shares you wish to buy:</p>
+        <div class="form-group">
+            <input required min = "1" id = "buy_shares" class="form-control" name="shares" placeholder="Number of shares" type="number"/>
+            <div id = "buyshares" class = "alert alert-danger"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Buy shares</button>
+        </form>
+        <h2 style = "padding-top: 50px">Selling shares</h2>
+        <form id = "sell" action = "/sell/" method = "post">
+        <p>Please select a stock from the drop-down list:</p>
+        <div class = "form-group">
+            <select required id = "sell_symbol"  name = "symbol">
+                <option></option>
+                {% for entry in portfolio %}
+                    <option value = "{{ entry.stock }}"> {{ entry.stock }} </option>
+                {% endfor %}
+            </select>
+            <div id = "sellsymbol" class = "alert alert-danger"></div>
+        </div>
+        <p>Please enter the number of shares you wish to sell:</p>
+        <div class="form-group">
+            <input required min = "1" id = "sell_shares" class="form-control" name="shares" placeholder="Number of shares" type="number"/>
+            <div id = "sellshares" class = "alert alert-danger"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Sell shares</button>
+    </form>
+    </div>
+{% endblock %}

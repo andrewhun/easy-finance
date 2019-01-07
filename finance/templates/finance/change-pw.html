@@ -1,0 +1,25 @@
+{% extends "finance/base.html" %}
+
+{% block title %}
+    Changing password
+{% endblock %}
+
+{% block main %}
+    <h1>Password change</h1>
+    <form id = "change_pw" action="/change_pw/" method="post">
+        <div class="form-group">
+            {% csrf_token %}
+            <input required class="form-control" id = "old_pw" name="old_password" autofocus placeholder="Old Password" type="password"/>
+        <div id = "oldpw" class = "alert alert-danger" role = "alert"></div>
+        </div>
+        <div class="form-group">
+            <input required class="form-control" id = "new_pw" name="new_password" placeholder="New Password" type="password"/>
+            <div id = "newpw" class = "alert alert-danger" role = "alert"></div>
+        </div>
+        <div class="form-group">
+            <input required class="form-control" id = "change_confirmation" name="confirmation" placeholder="Confirm New Password" type="password"/>
+            <div id = "changeconf" class = "alert alert-danger" role = "alert"></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Change Password</button>
+    </form>
+{% endblock %}
