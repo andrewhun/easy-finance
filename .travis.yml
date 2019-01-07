@@ -4,6 +4,7 @@ python:
 install:
   - pip install -r requirements.txt
 script:
-  - python manage.py test
+  - python manage.py test finance.unit_tests
+  - python manage.py test finance.functional_tests
 addons:
   chrome: stable
