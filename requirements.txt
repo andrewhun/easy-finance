@@ -1,0 +1,4 @@
+selenium
+django
+requests
+django-background-tasks
