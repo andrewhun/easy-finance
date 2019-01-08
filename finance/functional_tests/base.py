@@ -15,7 +15,9 @@ class BaseFunctionalTestCase(StaticLiveServerTestCase):
 	# set up a test user the same way registering a new user would, and set up the webdriver
 	def setUp(self):
 
-		self.driver = webdriver.Chrome()
+		chrome_options = webdriver.ChromeOptions()
+		chrome_options.add_argument('--no-sandbox')
+		self.driver = webdriver.Chrome(chrome_options = chrome_options)
 		self.driver.implicitly_wait(30)
 
 		self.test1 = User.objects.create_user(username = "test1", password = "testpass1")
