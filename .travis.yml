@@ -5,6 +5,7 @@ install:
   - pip install -r requirements.txt
 before_script:
   - wget http://chromedriver.storage.googleapis.com/2.45/chromedriver_linux64.zip
+  - unzip chromedriver_linux64.zip -d 
 script:
   - python manage.py test finance.unit_tests
   - python manage.py test finance.functional_tests
